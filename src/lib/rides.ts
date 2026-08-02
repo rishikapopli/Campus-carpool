@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { db } from "./db";
 
 /* ---------------------------------------------------------------------------
- * Campus Ride — Unified Centralized Reactive Data Store
+ * Campus Ride — Unified Centralized Reactive Data Store & Engine
  * ------------------------------------------------------------------------- */
 
 /* ---------------------------------- Types --------------------------------- */
@@ -298,7 +298,7 @@ function seedDatabase(): CampusRideState {
     totalRides: 14,
     initials: "AS",
     dept: "CSE '26",
-    upiId: "aditi@okicici",
+    upiId: "yourname@upi_id",
     preferences: ["Music OK", "AC on", "No smoking"],
     vehicles: [defaultCar],
     selectedVehicleId: defaultCar.id,
@@ -309,7 +309,7 @@ function seedDatabase(): CampusRideState {
         type: "paid",
         description: "Ride to Chandigarh Sec 17",
         date: todayISO(),
-        upiId: "aditi@okicici",
+        upiId: "yourname@upi_id",
       },
       {
         id: "pay_2",
@@ -317,7 +317,7 @@ function seedDatabase(): CampusRideState {
         type: "paid",
         description: "Ride to Elante Mall",
         date: todayISO(),
-        upiId: "aditi@okicici",
+        upiId: "yourname@upi_id",
       },
     ],
   };
@@ -335,7 +335,7 @@ function seedDatabase(): CampusRideState {
       },
       from: "Chitkara University, Punjab",
       to: "Sector 17 Plaza, Chandigarh",
-      fromCoords: { lat: 30.5161, lng: 76.6596 },
+      fromCoords: { lat: 30.5165, lng: 76.6594 },
       toCoords: { lat: 30.741, lng: 76.7794 },
       date: todayISO(),
       time: "13:15",
@@ -363,8 +363,8 @@ function seedDatabase(): CampusRideState {
       },
       from: "Chitkara University Campus",
       to: "Elante Mall, Industrial Area Phase I, Chandigarh",
-      fromCoords: { lat: 30.5161, lng: 76.6596 },
-      toCoords: { lat: 30.7054, lng: 76.8013 },
+      fromCoords: { lat: 30.5165, lng: 76.6594 },
+      toCoords: { lat: 30.7046, lng: 76.8013 },
       date: todayISO(),
       time: "14:00",
       totalSeats: 3,
@@ -399,7 +399,7 @@ function seedDatabase(): CampusRideState {
       },
       from: "Boys Hostel D, Campus",
       to: "Panchkula Sector 5",
-      fromCoords: { lat: 30.5161, lng: 76.6596 },
+      fromCoords: { lat: 30.5169, lng: 76.6587 },
       toCoords: { lat: 30.6942, lng: 76.8606 },
       date: todayISO(),
       time: "16:30",
@@ -435,7 +435,7 @@ function seedDatabase(): CampusRideState {
       },
       from: "Chitkara University, Punjab",
       to: "Chandigarh International Airport (IXC), Mohali",
-      fromCoords: { lat: 30.5161, lng: 76.6596 },
+      fromCoords: { lat: 30.5165, lng: 76.6594 },
       toCoords: { lat: 30.6735, lng: 76.7885 },
       date: todayISO(),
       time: "18:00",
@@ -791,7 +791,7 @@ export const rideStore = {
         : estimateDistanceKm(input.fromCoords, input.toCoords);
 
     const totalFare = calculateTotalFare(distKm);
-    const passengerCapacity = input.seats + 1; // driver + seats
+    const passengerCapacity = input.seats + 1;
     const costPerSeat = input.cost && input.cost > 0 ? input.cost : calculateSplitFare(totalFare, passengerCapacity);
 
     const ride: Ride = {
@@ -876,12 +876,10 @@ export const rideStore = {
     if (!ride) return { ok: false, message: "Ride not found." };
 
     if (ride.driver.id === user.id) {
-      // Driver cancels entire ride
       const rides = state.rides.map((r) => (r.id === rideId ? { ...r, status: "Cancelled" as RideStatus } : r));
       setState({ ...state, rides });
       return { ok: true, message: "Ride cancelled successfully." };
     } else if (ride.passengers.includes(user.id)) {
-      // Passenger leaves ride
       const rides = state.rides.map((r) => {
         if (r.id !== rideId) return r;
         const nextPassengers = r.passengers.filter((id) => id !== user.id);
