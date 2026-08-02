@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from "react";
+import { db } from "./db";
 
 /* ---------------------------------------------------------------------------
- * Campus Ride — Production Reactive Data Store & Backend State Engine
+ * Campus Ride — Unified Centralized Reactive Data Store
  * ------------------------------------------------------------------------- */
+
+/* ---------------------------------- Types --------------------------------- */
 
 export type LatLng = { lat: number; lng: number };
 
@@ -17,11 +20,11 @@ export type Driver = {
 
 export type Vehicle = {
   id: string;
-  name: string; // e.g. "Hyundai i20"
-  model: string; // e.g. "i20"
-  brand?: string; // e.g. "Hyundai"
-  color?: string; // e.g. "White"
-  registrationNumber: string; // e.g. "PB-11-AK-2205"
+  name: string; // e.g., "Hyundai i20"
+  model: string; // e.g., "i20"
+  brand?: string; // e.g., "Hyundai"
+  color?: string; // e.g., "White"
+  registrationNumber: string; // e.g., "PB-11-AK-2205"
   totalSeats: number; // 2 to 7
   isDefault?: boolean;
 };
@@ -61,29 +64,37 @@ export type PaymentTransaction = {
   upiId: string;
 };
 
-export type UserProfile = {
+export type User = {
   id: string;
   name: string;
   email: string;
-  initials: string;
+  phone?: string;
   university: string;
-  dept: string;
-  gradYear: string;
+  course: string;
+  graduationYear: string;
+  profileImage?: string;
+  photoUrl?: string;
+  isVerified: boolean;
+  verifiedAt: string | null;
   trustScore: number;
   rating: number;
-  totalRides: number;
-  isVerified: boolean;
-  photoUrl?: string;
-  upiId: string;
-  paymentHistory: PaymentTransaction[];
-  preferences: string[];
+  rideCount?: number;
+  totalRides?: number;
+  initials: string;
+  dept: string;
+  upiId?: string;
+  paymentHistory?: PaymentTransaction[];
+  preferences?: string[];
   studentIdDoc?: string;
-  vehicles: Vehicle[];
+  vehicles?: Vehicle[];
   selectedVehicleId?: string | null;
 };
 
+/** Alias for compatibility with components referencing UserProfile */
+export type UserProfile = User;
+
 export type CampusRideState = {
-  user: UserProfile | null;
+  user: User | null;
   rides: Ride[];
 };
 
@@ -93,14 +104,31 @@ export interface ImpactMetrics {
   co2SavedKg: number;
 }
 
+export type OfferRideInput = {
+  from: string;
+  to: string;
+  fromCoords?: LatLng | null;
+  toCoords?: LatLng | null;
+  date: string; // ISO yyyy-mm-dd
+  time: string; // HH:mm
+  seats: number;
+  cost?: number;
+  distanceKm?: number;
+  preferences: string[];
+  vehicleId?: string | null;
+  vehicle?: Vehicle | null;
+};
+
+/* ------------------------------- Constants -------------------------------- */
+
 const STORAGE_KEY = "campus-ride:v3";
 const DRIVER_COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#0EA5E9", "#8B5CF6"];
-
-/* -------------------------------- Fare Math ------------------------------- */
 
 export const BASE_FARE = 30; // ₹
 export const PER_KM_RATE = 7; // ₹/km
 export const CO2_PER_KM = 0.171;
+
+/* -------------------------------- Fare Math ------------------------------- */
 
 /** Total Fare = Base Fare + (Distance x Per KM), rounded to nearest rupee. */
 export function calculateTotalFare(distanceKmVal: number, baseFare = BASE_FARE, perKm = PER_KM_RATE): number {
@@ -119,7 +147,6 @@ export function calculateSplitFare(totalFare: number, passengerCount: number): n
 export function validateRegistrationNumber(regNo: string): boolean {
   if (!regNo) return false;
   const cleaned = regNo.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-  // Indian vehicle registration regex: State code (2 chars) + RTO (1-2 digits) + Series (1-3 chars) + Number (4 digits)
   const indianRegRegex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}$/;
   return indianRegRegex.test(cleaned);
 }
@@ -158,6 +185,21 @@ export function nameFromEmail(email: string): string {
       .map((p) => p[0].toUpperCase() + p.slice(1))
       .join(" ") || "Campus Rider"
   );
+}
+
+export function universityFromEmail(email: string): string {
+  const domain = email.split("@")[1]?.toLowerCase() ?? "";
+  if (domain.includes("chitkara")) return "Chitkara University";
+  if (domain.includes("stanford")) return "Stanford University";
+  if (domain.includes("harvard")) return "Harvard University";
+  if (domain.includes("mit")) return "MIT";
+  if (domain.includes("oxford")) return "Oxford University";
+  if (domain.includes("cambridge")) return "Cambridge University";
+  if (domain.includes("berkeley")) return "UC Berkeley";
+  if (domain.includes("iit")) return "IIT Delhi";
+  const part = domain.split(".")[0];
+  if (part) return part.charAt(0).toUpperCase() + part.slice(1) + " University";
+  return "Chitkara University";
 }
 
 export function todayISO(): string {
@@ -200,6 +242,11 @@ export function distanceKm(a: LatLng, b: LatLng): number {
   return Math.round(2 * R * Math.asin(Math.sqrt(h)) * 10) / 10;
 }
 
+function estimateDistanceKm(fromCoords?: LatLng | null, toCoords?: LatLng | null): number {
+  if (fromCoords && toCoords) return distanceKm(fromCoords, toCoords);
+  return 30;
+}
+
 /* -------------------------------- Impact Math ----------------------------- */
 
 export function rideMoneySaved(ride: Ride): number {
@@ -235,18 +282,22 @@ function seedDatabase(): CampusRideState {
     isDefault: true,
   };
 
-  const defaultUser: UserProfile = {
+  const defaultUser: User = {
     id: "user_aditi",
     name: "Aditi Sharma",
     email: "aditi.sharma@chitkara.edu",
-    initials: "AS",
+    phone: "+91 98765 43210",
     university: "Chitkara University",
-    dept: "CSE '26",
-    gradYear: "2026",
+    course: "Computer Science & Engineering",
+    graduationYear: "2026",
+    isVerified: true,
+    verifiedAt: new Date().toISOString(),
     trustScore: 98,
     rating: 4.9,
+    rideCount: 14,
     totalRides: 14,
-    isVerified: true,
+    initials: "AS",
+    dept: "CSE '26",
     upiId: "aditi@okicici",
     preferences: ["Music OK", "AC on", "No smoking"],
     vehicles: [defaultCar],
@@ -451,7 +502,7 @@ function setState(next: CampusRideState) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      /* fallback in memory */
+      /* storage full or unavailable — keep in-memory state */
     }
   }
   emit();
@@ -462,6 +513,16 @@ function hydrateFromStorage() {
   hydrated = true;
   state = loadState();
   emit();
+}
+
+export function subscribeRides(listener: () => void): () => void {
+  hydrateFromStorage();
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getRides(): Ride[] {
+  return state.rides;
 }
 
 export const rideStore = {
@@ -479,8 +540,15 @@ export const rideStore = {
 
   /* ------------------------------- Actions -------------------------------- */
 
-  login(email: string): UserProfile {
-    const name = nameFromEmail(email);
+  login(email: string, details?: Partial<User>): User {
+    const name = details?.name ?? nameFromEmail(email);
+    const university = details?.university ?? universityFromEmail(email);
+    const course = details?.course ?? "Computer Science & Engineering";
+    const graduationYear = details?.graduationYear ?? "2026";
+    const yearShort = graduationYear.length >= 2 ? graduationYear.slice(-2) : "26";
+    const courseCode = course.includes("Computer") || course.toLowerCase().includes("cse") ? "CSE" : course;
+    const dept = `${courseCode} '${yearShort}`;
+
     const existing = state.user;
     const defaultCar: Vehicle = {
       id: "veh_hyundai_i20",
@@ -493,25 +561,33 @@ export const rideStore = {
       isDefault: true,
     };
 
-    const user: UserProfile = {
+    const user: User = {
       id: existing?.email === email ? existing.id : makeId("user"),
       name: existing?.email === email ? existing.name : name,
-      email,
+      email: email.trim(),
+      phone: details?.phone ?? existing?.phone ?? "+91 98765 43210",
+      university,
+      course,
+      graduationYear,
+      profileImage: details?.profileImage ?? existing?.profileImage ?? "",
+      photoUrl: details?.photoUrl ?? existing?.photoUrl ?? "",
+      isVerified: details?.isVerified ?? existing?.isVerified ?? true,
+      verifiedAt: details?.verifiedAt ?? existing?.verifiedAt ?? new Date().toISOString(),
+      trustScore: details?.trustScore ?? existing?.trustScore ?? 98,
+      rating: details?.rating ?? existing?.rating ?? 4.9,
+      rideCount: details?.rideCount ?? existing?.rideCount ?? 14,
+      totalRides: details?.totalRides ?? existing?.totalRides ?? 14,
       initials: initialsOf(name),
-      university: "Chitkara University",
-      dept: existing?.dept ?? "CSE '26",
-      gradYear: existing?.gradYear ?? "2026",
-      trustScore: existing?.trustScore ?? 98,
-      rating: existing?.rating ?? 4.9,
-      totalRides: existing?.totalRides ?? 0,
-      isVerified: true,
-      upiId: existing?.upiId ?? `${email.split("@")[0]}@upi`,
-      paymentHistory: existing?.paymentHistory ?? [],
-      preferences: existing?.preferences ?? ["Music OK", "AC on"],
-      vehicles: existing?.vehicles && existing.vehicles.length > 0 ? existing.vehicles : [defaultCar],
-      selectedVehicleId: existing?.selectedVehicleId ?? defaultCar.id,
+      dept,
+      upiId: details?.upiId ?? existing?.upiId ?? `${email.split("@")[0]}@upi`,
+      paymentHistory: details?.paymentHistory ?? existing?.paymentHistory ?? [],
+      preferences: details?.preferences ?? existing?.preferences ?? ["Music OK", "AC on"],
+      vehicles: details?.vehicles ?? (existing?.vehicles && existing.vehicles.length > 0 ? existing.vehicles : [defaultCar]),
+      selectedVehicleId: details?.selectedVehicleId ?? existing?.selectedVehicleId ?? defaultCar.id,
     };
+
     setState({ ...state, user });
+    void db.createUser(email, user);
     return user;
   },
 
@@ -519,10 +595,42 @@ export const rideStore = {
     setState({ ...state, user: null });
   },
 
-  updateUserProfile(updates: Partial<UserProfile>) {
+  updateUserProfile(updates: Partial<User>) {
     if (!state.user) return;
-    const user = { ...state.user, ...updates };
-    setState({ ...state, user });
+    const name = updates.name?.trim() || state.user.name;
+    const course = updates.course?.trim() || state.user.course;
+    const graduationYear = updates.graduationYear?.trim() || state.user.graduationYear || "2026";
+    const yearShort = graduationYear.length >= 2 ? graduationYear.slice(-2) : "26";
+    const courseCode = course.includes("Computer") || course.toLowerCase().includes("cse") ? "CSE" : course;
+    const dept = `${courseCode} '${yearShort}`;
+
+    const updatedUser: User = {
+      ...state.user,
+      ...updates,
+      name,
+      course,
+      graduationYear,
+      dept,
+      initials: initialsOf(name),
+    };
+
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
+  },
+
+  updateUserEmail(newEmail: string): User | null {
+    if (!state.user) return null;
+    const university = universityFromEmail(newEmail);
+    const updatedUser: User = {
+      ...state.user,
+      email: newEmail.trim(),
+      university,
+      isVerified: true,
+      verifiedAt: new Date().toISOString(),
+    };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
+    return updatedUser;
   },
 
   /* ---------------------------- Vehicle Actions --------------------------- */
@@ -562,13 +670,14 @@ export const rideStore = {
     };
 
     const vehicles = [...(user.vehicles ?? []), vehicle];
-    const updatedUser: UserProfile = {
+    const updatedUser: User = {
       ...user,
       vehicles,
       selectedVehicleId: vehicle.id,
     };
 
     setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
     return { ok: true, vehicle };
   },
 
@@ -590,7 +699,9 @@ export const rideStore = {
       };
     });
 
-    setState({ ...state, user: { ...user, vehicles } });
+    const updatedUser = { ...user, vehicles };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
     return { ok: true };
   },
 
@@ -599,14 +710,18 @@ export const rideStore = {
     if (!user) return { ok: false };
     const vehicles = (user.vehicles ?? []).filter((v) => v.id !== id);
     const selectedVehicleId = user.selectedVehicleId === id ? vehicles[0]?.id ?? null : user.selectedVehicleId;
-    setState({ ...state, user: { ...user, vehicles, selectedVehicleId } });
+    const updatedUser = { ...user, vehicles, selectedVehicleId };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
     return { ok: true };
   },
 
   selectVehicle(id: string) {
     const user = state.user;
     if (!user) return;
-    setState({ ...state, user: { ...user, selectedVehicleId: id } });
+    const updatedUser = { ...user, selectedVehicleId: id };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
   },
 
   togglePreference(pref: string) {
@@ -615,30 +730,38 @@ export const rideStore = {
     const preferences = current.includes(pref)
       ? current.filter((p) => p !== pref)
       : [...current, pref];
-    setState({ ...state, user: { ...state.user, preferences } });
+    const updatedUser = { ...state.user, preferences };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
   },
 
   saveUpi(upiId: string) {
     if (!state.user) return;
-    setState({ ...state, user: { ...state.user, upiId: upiId.trim() } });
+    const updatedUser = { ...state.user, upiId: upiId.trim() };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
   },
 
   deleteUpi() {
     if (!state.user) return;
-    setState({ ...state, user: { ...state.user, upiId: "" } });
+    const updatedUser = { ...state.user, upiId: "" };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
   },
 
   submitVerification(studentIdDoc: string) {
     if (!state.user) return;
-    setState({
-      ...state,
-      user: {
-        ...state.user,
-        studentIdDoc,
-        isVerified: true,
-      },
-    });
+    const updatedUser = {
+      ...state.user,
+      studentIdDoc,
+      isVerified: true,
+      verifiedAt: new Date().toISOString(),
+    };
+    setState({ ...state, user: updatedUser });
+    void db.saveUser(updatedUser);
   },
+
+  /* ----------------------------- Ride Actions ----------------------------- */
 
   addRide(input: OfferRideInput): Ride {
     const user = state.user;
@@ -660,18 +783,16 @@ export const rideStore = {
           rating: 5.0,
         };
 
-    const selectedVehicle = user?.vehicles?.find((v) => v.id === (input.vehicleId || user.selectedVehicleId)) ?? user?.vehicles?.[0] ?? null;
+    const selectedVehicle = user?.vehicles?.find((v) => v.id === (input.vehicleId || user.selectedVehicleId)) ?? user?.vehicles?.[0] ?? input.vehicle ?? null;
 
     const distKm =
       input.distanceKm && input.distanceKm > 0
         ? input.distanceKm
-        : input.fromCoords && input.toCoords
-          ? distanceKm(input.fromCoords, input.toCoords)
-          : 30;
+        : estimateDistanceKm(input.fromCoords, input.toCoords);
 
     const totalFare = calculateTotalFare(distKm);
-    const passengerCapacity = input.seats + 1; // driver + available passenger seats
-    const costPerSeat = input.cost > 0 ? input.cost : calculateSplitFare(totalFare, passengerCapacity);
+    const passengerCapacity = input.seats + 1; // driver + seats
+    const costPerSeat = input.cost && input.cost > 0 ? input.cost : calculateSplitFare(totalFare, passengerCapacity);
 
     const ride: Ride = {
       id: makeId("ride"),
@@ -701,18 +822,19 @@ export const rideStore = {
 
   joinRide(rideId: string): { ok: boolean; error?: string } {
     const user = state.user;
-    if (!user) return { ok: false, error: "Please sign in to join a ride." };
+    if (!user) return { ok: false, error: "You need to be signed in to join a ride." };
     const ride = state.rides.find((r) => r.id === rideId);
     if (!ride) return { ok: false, error: "This ride is no longer available." };
-    if (ride.driver.id === user.id) return { ok: false, error: "You cannot join your own ride." };
-    if (ride.passengers.includes(user.id)) return { ok: false, error: "You have already joined this ride." };
-    if (ride.availableSeats <= 0) return { ok: false, error: "This ride is currently full." };
+    if (ride.driver.id === user.id) return { ok: false, error: "You can't join your own ride." };
+    if (ride.passengers.includes(user.id))
+      return { ok: false, error: "You've already joined this ride." };
+    if (ride.availableSeats <= 0) return { ok: false, error: "This ride is full." };
 
     const updatedRides = state.rides.map((r) => {
       if (r.id !== rideId) return r;
       const nextPassengers = [...r.passengers, user.id];
       const availableSeats = r.availableSeats - 1;
-      const passengerCount = nextPassengers.length + 1; // driver + passengers
+      const passengerCount = nextPassengers.length + 1;
       const cost = calculateSplitFare(r.totalFare, passengerCount);
 
       return {
@@ -734,13 +856,16 @@ export const rideStore = {
       upiId: user.upiId || "user@upi",
     };
 
-    const updatedUser: UserProfile = {
+    const totalRidesCount = (user.totalRides ?? user.rideCount ?? 0) + 1;
+    const updatedUser: User = {
       ...user,
-      totalRides: user.totalRides + 1,
+      totalRides: totalRidesCount,
+      rideCount: totalRidesCount,
       paymentHistory: [newPayment, ...(user.paymentHistory ?? [])],
     };
 
     setState({ user: updatedUser, rides: updatedRides });
+    void db.saveUser(updatedUser);
     return { ok: true };
   },
 
@@ -778,41 +903,28 @@ export const rideStore = {
   },
 };
 
-/* ----------------------------- Offer Ride Input --------------------------- */
-
-export type OfferRideInput = {
-  from: string;
-  to: string;
-  fromCoords?: LatLng | null;
-  toCoords?: LatLng | null;
-  date: string; // ISO yyyy-mm-dd
-  time: string; // HH:mm
-  seats: number;
-  cost: number;
-  distanceKm?: number;
-  preferences: string[];
-  vehicleId?: string | null;
-  vehicle?: Vehicle | null;
-};
+/* ------------------------------ Offer Input Validation -------------------- */
 
 const LOCATION_RE = /[a-zA-Z]/;
 
 export function validateOffer(input: Partial<OfferRideInput>): string | null {
   const from = (input.from ?? "").trim();
   const to = (input.to ?? "").trim();
-  if (!from) return "Please select a pickup location.";
-  if (from.length < 3 || !LOCATION_RE.test(from)) return "Please enter a valid pickup location in India.";
-  if (!to) return "Please select a destination.";
-  if (to.length < 3 || !LOCATION_RE.test(to)) return "Please enter a valid destination in India.";
+  if (!from) return "Please enter a pickup location.";
+  if (from.length < 3 || !LOCATION_RE.test(from)) return "Please enter a valid pickup location.";
+  if (!to) return "Please enter a destination.";
+  if (to.length < 3 || !LOCATION_RE.test(to)) return "Please enter a valid destination.";
   if (from.toLowerCase() === to.toLowerCase()) return "Pickup and destination must be different.";
   if (!input.date) return "Please choose a departure date.";
-  if (input.date < todayISO()) return "Departure date cannot be in the past.";
+  if (input.date < todayISO()) return "Departure date can't be in the past.";
   if (!input.time) return "Please choose a departure time.";
-  if (!input.seats || input.seats <= 0) return "Seats must be at least 1.";
+  if (!input.seats || input.seats <= 0) return "Seats must be greater than zero.";
+  if (input.cost != null && (Number.isNaN(input.cost) || input.cost < 0))
+    return "Please enter a valid contribution amount.";
   return null;
 }
 
-/* ------------------------------- React Hooks ------------------------------ */
+/* -------------------------------- React Hooks ----------------------------- */
 
 export function useCampusRide(): CampusRideState {
   return useSyncExternalStore(
@@ -820,14 +932,6 @@ export function useCampusRide(): CampusRideState {
     rideStore.getSnapshot,
     rideStore.getServerSnapshot,
   );
-}
-
-export function subscribeRides(listener: () => void): () => void {
-  return rideStore.subscribe(listener);
-}
-
-export function getRides(): Ride[] {
-  return rideStore.getSnapshot().rides;
 }
 
 export const MIN_DATE = todayISO;

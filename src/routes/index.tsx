@@ -1,1310 +1,3 @@
-// import { createFileRoute } from "@tanstack/react-router";
-// import { useEffect, useRef, useState, type ReactNode } from "react";
-// import {
-//   Home,
-//   Search,
-//   PlusCircle,
-//   User,
-//   Bell,
-//   MapPin,
-//   Clock,
-//   Users,
-//   Star,
-//   Shield,
-//   Sparkles,
-//   ArrowRight,
-//   ArrowLeft,
-//   Navigation,
-//   Phone,
-//   AlertTriangle,
-//   GraduationCap,
-//   Mail,
-//   ChevronRight,
-//   Wallet,
-//   Car,
-//   LogOut,
-//   Settings,
-//   BadgeCheck,
-//   Calendar,
-//   Upload,
-//   FileText,
-//   Image as ImageIcon,
-//   Loader2,
-//   CheckCircle2,
-//   RefreshCw,
-// } from "lucide-react";
-// import { analyzeTimetable, type TimetableAnalysis } from "../lib/timetable";
-// import { ImpactSection } from "../components/ImpactSection";
-// import { useImpactStats } from "../hooks/useImpactStats";
-// import { createRide, joinRide, completeRide } from "../lib/rides";
-
-// export const Route = createFileRoute("/")({
-//   component: CampusRideApp,
-// });
-
-// type Screen = "login" | "home" | "offer" | "find" | "details" | "live" | "profile";
-
-// const NAV_ITEMS: { id: Screen; icon: typeof Home; label: string }[] = [
-//   { id: "home", icon: Home, label: "Home" },
-//   { id: "find", icon: Search, label: "Find" },
-//   { id: "offer", icon: PlusCircle, label: "Offer" },
-//   { id: "profile", icon: User, label: "Profile" },
-// ];
-
-// function CampusRideApp() {
-//   const [screen, setScreen] = useState<Screen>("login");
-
-//   // Auth is a standalone full-bleed experience — no app chrome.
-//   if (screen === "login") {
-//     return <LoginScreen onDone={() => setScreen("home")} />;
-//   }
-
-//   // The live trip is an immersive, full-screen map. It intentionally drops the
-//   // sidebar / bottom nav so the map can own the whole viewport at every size.
-//   if (screen === "live") {
-//     return <LiveTripScreen back={() => setScreen("home")} />;
-//   }
-
-//   return (
-//     <div className="flex min-h-[100dvh] w-full overflow-x-hidden">
-//       {/* Desktop / laptop persistent sidebar */}
-//       <SideNav current={screen} go={setScreen} />
-
-//       {/* Main content column — mobile scrolls the page, bottom nav sticks. */}
-//       <div className="relative flex min-h-[100dvh] min-w-0 flex-1 flex-col">
-//         <main className="min-w-0 flex-1 overflow-x-hidden">
-//           {screen === "home" && <HomeScreen go={setScreen} />}
-//           {screen === "offer" && <OfferRideScreen back={() => setScreen("home")} />}
-//           {screen === "find" && (
-//             <FindRideScreen back={() => setScreen("home")} onSelect={() => setScreen("details")} />
-//           )}
-//           {screen === "details" && (
-//             <RideDetailsScreen back={() => setScreen("find")} onStart={() => setScreen("live")} />
-//           )}
-//           {screen === "profile" && (
-//             <ProfileScreen back={() => setScreen("home")} onLogout={() => setScreen("login")} />
-//           )}
-//         </main>
-//         <BottomNav current={screen} go={setScreen} />
-//       </div>
-//     </div>
-//   );
-// }
-
-// /* ---------- Navigation ---------- */
-
-// function BrandMark({ className }: { className?: string }) {
-//   return (
-//     <div className={`flex items-center gap-2 ${className ?? ""}`}>
-//       <div className="grid h-10 w-10 place-items-center rounded-2xl gradient-brand shadow-[var(--shadow-soft)]">
-//         <Car className="h-5 w-5 text-white" />
-//       </div>
-//       <span className="font-display text-lg font-bold">CampusRide</span>
-//     </div>
-//   );
-// }
-
-// /** Desktop / laptop navigation rail (lg+). Hidden on mobile & tablet. */
-// function SideNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
-//   return (
-//     <aside className="sticky top-0 hidden h-[100dvh] w-64 shrink-0 flex-col p-4 lg:flex xl:w-72">
-//       <div className="glass flex flex-1 flex-col rounded-[2rem] p-4 xl:p-5">
-//         <BrandMark className="px-2 py-2" />
-
-//         <nav className="mt-6 flex flex-col gap-1.5">
-//           {NAV_ITEMS.map(({ id, icon: Icon, label }) => {
-//             const active = current === id;
-//             return (
-//               <button
-//                 key={id}
-//                 onClick={() => go(id)}
-//                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-//                   active
-//                     ? "gradient-brand text-white shadow-[var(--shadow-soft)]"
-//                     : "text-muted-foreground hover:bg-white/60 hover:text-foreground"
-//                 }`}
-//               >
-//                 <Icon className={`h-5 w-5 ${active ? "text-white" : ""}`} />
-//                 {label}
-//               </button>
-//             );
-//           })}
-//         </nav>
-
-//         <div className="mt-auto">
-//           <button
-//             onClick={() => go("profile")}
-//             className="flex w-full items-center gap-3 rounded-2xl bg-white/55 p-3 text-left transition hover:bg-white/80"
-//           >
-//             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full gradient-brand text-sm font-semibold text-white">
-//               AS
-//             </div>
-//             <div className="min-w-0 flex-1">
-//               <p className="truncate text-sm font-semibold">Aditi Sharma</p>
-//               <p className="truncate text-xs text-muted-foreground">CSE '26 · Verified</p>
-//             </div>
-//           </button>
-//         </div>
-//       </div>
-//     </aside>
-//   );
-// }
-
-// /** Mobile & tablet bottom navigation. Hidden once the sidebar takes over (lg+). */
-// function BottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
-//   return (
-//     <div className="sticky bottom-0 z-30 px-4 pb-4 pt-2 lg:hidden">
-//       <div className="glass mx-auto flex max-w-md justify-around rounded-3xl px-2 py-2">
-//         {NAV_ITEMS.map(({ id, icon: Icon, label }) => {
-//           const active = current === id;
-//           return (
-//             <button
-//               key={id}
-//               onClick={() => go(id)}
-//               className={`flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 transition ${
-//                 active ? "gradient-brand" : "text-muted-foreground hover:text-foreground"
-//               }`}
-//             >
-//               <Icon className={`h-5 w-5 ${active ? "text-white" : ""}`} />
-//               <span className={`text-[10px] font-medium ${active ? "text-white" : ""}`}>
-//                 {label}
-//               </span>
-//             </button>
-//           );
-//         })}
-//       </div>
-//     </div>
-//   );
-// }
-
-// /* ---------- Shared ---------- */
-
-// function ScreenHeader({
-//   title,
-//   back,
-//   right,
-// }: {
-//   title: string;
-//   back?: () => void;
-//   right?: ReactNode;
-// }) {
-//   return (
-//     <div className="glass sticky top-0 z-20 px-5 py-4 lg:px-8">
-//       <div className="mx-auto flex w-full max-w-6xl items-center gap-3">
-//         {back && (
-//           <button
-//             onClick={back}
-//             className="glass grid h-9 w-9 shrink-0 place-items-center rounded-full"
-//           >
-//             <ArrowLeft className="h-4 w-4" />
-//           </button>
-//         )}
-//         <h2 className="flex-1 truncate text-lg font-semibold">{title}</h2>
-//         {right}
-//       </div>
-//     </div>
-//   );
-// }
-
-// /** Standard centered content column shared by the inner screens. */
-// function ScreenBody({
-//   children,
-//   className = "max-w-2xl",
-// }: {
-//   children: ReactNode;
-//   className?: string;
-// }) {
-//   return (
-//     <div className={`mx-auto w-full ${className} px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pb-12`}>
-//       {children}
-//     </div>
-//   );
-// }
-
-// /* ---------- Screens ---------- */
-
-// function LoginScreen({ onDone }: { onDone: () => void }) {
-//   const [step, setStep] = useState<"email" | "otp">("email");
-//   return (
-//     <div className="min-h-[100dvh] w-full overflow-x-hidden lg:grid lg:grid-cols-2">
-//       {/* Hero / brand panel */}
-//       <div className="relative flex flex-col overflow-hidden px-6 pt-14 pb-6 sm:px-10 lg:justify-center lg:px-14 lg:pt-16 lg:pb-16 xl:px-20">
-//         <div
-//           className="absolute inset-0 -z-10 opacity-70"
-//           style={{
-//             background:
-//               "radial-gradient(60% 40% at 50% 0%, oklch(0.85 0.12 200) 0%, transparent 70%)",
-//           }}
-//         />
-//         <div className="mx-auto w-full max-w-md lg:mx-0 lg:max-w-xl">
-//           <BrandMark className="mb-10 lg:mb-14" />
-//           <h1 className="text-4xl font-bold leading-tight lg:text-5xl xl:text-6xl">
-//             Ride with your <span className="text-gradient-brand">campus</span>.
-//           </h1>
-//           <p className="mt-3 text-muted-foreground lg:mt-5 lg:text-lg">
-//             AI-matched carpools for verified university students. Safer, cheaper, greener.
-//           </p>
-//           {/* Trust badges live in the hero on large screens. */}
-//           <div className="mt-8 hidden items-center gap-6 text-sm text-muted-foreground lg:flex">
-//             <span className="flex items-center gap-1.5">
-//               <BadgeCheck className="h-4 w-4 text-[color:var(--mint)]" /> Verified
-//             </span>
-//             <span className="flex items-center gap-1.5">
-//               <Shield className="h-4 w-4 text-[color:var(--primary)]" /> Secure
-//             </span>
-//             <span className="flex items-center gap-1.5">
-//               <Sparkles className="h-4 w-4 text-[color:var(--mint)]" /> AI matched
-//             </span>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Form panel */}
-//       <div className="flex items-center justify-center px-6 pb-10 sm:px-10 lg:px-14 lg:pb-0">
-//         <div className="w-full max-w-md">
-//           <div className="glass space-y-4 rounded-3xl p-5 sm:p-6">
-//             {step === "email" ? (
-//               <>
-//                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-//                   University Email
-//                 </label>
-//                 <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/70 px-4 py-3">
-//                   <Mail className="h-4 w-4 text-muted-foreground" />
-//                   <input
-//                     defaultValue="aditi.sharma@chitkara.edu"
-//                     className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-//                   />
-//                 </div>
-//                 <button
-//                   onClick={() => setStep("otp")}
-//                   className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)]"
-//                 >
-//                   Send verification code <ArrowRight className="h-4 w-4" />
-//                 </button>
-//                 <p className="flex items-center justify-center gap-1 text-center text-[11px] text-muted-foreground">
-//                   <Shield className="h-3 w-3" /> Only verified .edu accounts allowed
-//                 </p>
-//               </>
-//             ) : (
-//               <>
-//                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-//                   Enter 6-digit code
-//                 </label>
-//                 <div className="flex gap-2">
-//                   {["4", "1", "2", "8", "•", "•"].map((c, i) => (
-//                     <div
-//                       key={i}
-//                       className="grid h-12 min-w-0 flex-1 place-items-center rounded-xl border border-white/60 bg-white/70 text-lg font-semibold"
-//                     >
-//                       {c}
-//                     </div>
-//                   ))}
-//                 </div>
-//                 <button
-//                   onClick={onDone}
-//                   className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)]"
-//                 >
-//                   Verify & continue <ArrowRight className="h-4 w-4" />
-//                 </button>
-//                 <button
-//                   onClick={() => setStep("email")}
-//                   className="w-full text-xs text-muted-foreground"
-//                 >
-//                   Change email
-//                 </button>
-//               </>
-//             )}
-//           </div>
-
-//           {/* Trust badges below the card on mobile / tablet. */}
-//           <div className="mt-6 flex items-center justify-center gap-6 text-xs text-muted-foreground lg:hidden">
-//             <span className="flex items-center gap-1.5">
-//               <BadgeCheck className="h-3.5 w-3.5 text-[color:var(--mint)]" /> Verified
-//             </span>
-//             <span className="flex items-center gap-1.5">
-//               <Shield className="h-3.5 w-3.5 text-[color:var(--primary)]" /> Secure
-//             </span>
-//             <span className="flex items-center gap-1.5">
-//               <Sparkles className="h-3.5 w-3.5 text-[color:var(--mint)]" /> AI matched
-//             </span>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// function HomeScreen({ go }: { go: (s: Screen) => void }) {
-//   return (
-//     <div className="pb-28 lg:pb-12">
-//       {/* Greeting header with ambient gradient */}
-//       <div className="relative px-4 pt-12 pb-6 sm:px-6 lg:px-8">
-//         <div
-//           className="absolute inset-0 -z-10"
-//           style={{
-//             background:
-//               "radial-gradient(80% 60% at 100% 0%, oklch(0.85 0.14 165) 0%, transparent 60%), radial-gradient(80% 60% at 0% 0%, oklch(0.85 0.12 240) 0%, transparent 60%)",
-//           }}
-//         />
-//         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-//           <div>
-//             <p className="text-xs text-muted-foreground">Good afternoon,</p>
-//             <h1 className="flex items-center gap-1.5 text-2xl font-bold lg:text-3xl">
-//               Aditi <BadgeCheck className="h-5 w-5 text-[color:var(--primary)]" />
-//             </h1>
-//           </div>
-//           <div className="flex items-center gap-2">
-//             <button className="glass grid h-10 w-10 place-items-center rounded-full">
-//               <Bell className="h-4 w-4" />
-//             </button>
-//             <button
-//               onClick={() => go("profile")}
-//               className="grid h-10 w-10 place-items-center rounded-full gradient-brand text-sm font-semibold text-white lg:hidden"
-//             >
-//               AS
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-//         {/* Dashboard: single column on mobile, two-column from tablet up. */}
-//         <div className="space-y-4 md:grid md:grid-cols-12 md:items-start md:gap-5 md:space-y-0 lg:gap-6">
-//           {/* Primary column */}
-//           <div className="space-y-4 md:col-span-7 md:space-y-5 lg:space-y-6">
-//             <AIRideCard go={go} />
-
-//             <div className="grid grid-cols-2 gap-3 sm:gap-4">
-//               <button
-//                 onClick={() => go("offer")}
-//                 className="glass rounded-3xl p-4 text-left sm:p-5"
-//               >
-//                 <div className="mb-3 grid h-10 w-10 place-items-center rounded-2xl gradient-brand">
-//                   <PlusCircle className="h-5 w-5 text-white" />
-//                 </div>
-//                 <p className="font-semibold">Offer a Ride</p>
-//                 <p className="text-xs text-muted-foreground">Share your car, split fuel</p>
-//               </button>
-//               <button onClick={() => go("find")} className="glass rounded-3xl p-4 text-left sm:p-5">
-//                 <div
-//                   className="mb-3 grid h-10 w-10 place-items-center rounded-2xl"
-//                   style={{
-//                     background:
-//                       "linear-gradient(135deg, oklch(0.78 0.15 165), oklch(0.72 0.14 190))",
-//                   }}
-//                 >
-//                   <Search className="h-5 w-5 text-white" />
-//                 </div>
-//                 <p className="font-semibold">Find a Ride</p>
-//                 <p className="text-xs text-muted-foreground">Match with peers</p>
-//               </button>
-//             </div>
-//           </div>
-
-//           {/* Secondary column */}
-//           <div className="space-y-4 md:col-span-5 md:space-y-5 lg:space-y-6">
-//             <div>
-//               <div className="mb-3 flex items-center justify-between">
-//                 <h3 className="font-semibold">Upcoming rides</h3>
-//                 <button className="text-xs font-semibold text-[color:var(--primary)]">
-//                   See all
-//                 </button>
-//               </div>
-//               <div className="grid grid-cols-1 gap-3">
-//                 {upcomingRides.map((r, i) => (
-//                   <div key={i} className="glass flex items-center gap-3 rounded-2xl p-4">
-//                     <div
-//                       className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
-//                       style={{
-//                         background: "color-mix(in oklab, oklch(0.55 0.18 240) 15%, transparent)",
-//                       }}
-//                     >
-//                       <Car className="h-5 w-5 text-[color:var(--primary)]" />
-//                     </div>
-//                     <div className="min-w-0 flex-1">
-//                       <p className="truncate text-sm font-semibold">
-//                         {r.from} → {r.to}
-//                       </p>
-//                       <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-//                         <Clock className="h-3 w-3" /> {r.time} · <Users className="h-3 w-3" />{" "}
-//                         {r.seats} seats
-//                       </p>
-//                     </div>
-//                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
-//                   </div>
-//                 ))}
-//               </div>
-//             </div>
-
-//             <ImpactSection />
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// const upcomingRides = [
-//   { from: "Chitkara  Uni", to: "Chandigarh Sec 17", time: "Today, 1:15 PM", seats: 3 },
-//   { from: "Girls Hostel B", to: "Elante Mall", time: "Tomorrow, 5:00 PM", seats: 2 },
-// ];
-
-// const processingSteps = [
-//   "Analyzing timetable...",
-//   "Detecting class timings...",
-//   "Finding students with similar schedules...",
-//   "Generating ride recommendations...",
-// ];
-
-// type AICardState = "setup" | "processing" | "suggested";
-
-// // Canned schedule used by the "Use Demo Timetable" shortcut so users can
-// // explore instantly without an upload or an API key.
-// const DEMO_ANALYSIS: TimetableAnalysis = {
-//   classTimings: [
-//     { day: "Monday", subject: "Data Structures", startTime: "9:00 AM", endTime: "10:00 AM" },
-//     { day: "Monday", subject: "DBMS", startTime: "11:00 AM", endTime: "12:00 PM" },
-//     { day: "Tuesday", subject: "Operating Systems", startTime: "10:00 AM", endTime: "11:15 AM" },
-//     { day: "Wednesday", subject: "Computer Networks", startTime: "12:00 PM", endTime: "1:15 PM" },
-//   ],
-//   lastClassEndTime: "1:15 PM",
-//   days: ["Monday", "Tuesday", "Wednesday"],
-//   subjects: ["Data Structures", "DBMS", "Operating Systems", "Computer Networks"],
-// };
-
-// function loadStoredAnalysis(): TimetableAnalysis | null {
-//   if (typeof window === "undefined") return null;
-//   try {
-//     const raw = localStorage.getItem("timetableAnalysis");
-//     return raw ? (JSON.parse(raw) as TimetableAnalysis) : null;
-//   } catch {
-//     return null;
-//   }
-// }
-
-// function AIRideCard({ go }: { go: (s: Screen) => void }) {
-//   const [state, setState] = useState<AICardState>(() =>
-//     typeof window !== "undefined" && localStorage.getItem("timetableUploaded") === "true"
-//       ? "suggested"
-//       : "setup",
-//   );
-//   const [visibleSteps, setVisibleSteps] = useState(0);
-//   const [fileName, setFileName] = useState<string | null>(null);
-//   const [analysis, setAnalysis] = useState<TimetableAnalysis | null>(loadStoredAnalysis);
-//   const [error, setError] = useState<string | null>(null);
-//   const pdfInputRef = useRef<HTMLInputElement>(null);
-//   const imageInputRef = useRef<HTMLInputElement>(null);
-//   const demoTimer = useRef<number | null>(null);
-
-//   const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const file = e.target.files?.[0];
-//     e.target.value = ""; // allow re-selecting the same file later
-//     if (file) void analyzeFile(file);
-//   };
-
-//   // Reveal the processing checklist while the analysis runs.
-//   useEffect(() => {
-//     if (state !== "processing") return;
-//     setVisibleSteps(0);
-//     const timers = processingSteps.map((_, i) =>
-//       window.setTimeout(() => setVisibleSteps(i + 1), 300 + i * 400),
-//     );
-//     return () => timers.forEach(clearTimeout);
-//   }, [state]);
-
-//   // Cancel a pending demo simulation if the card unmounts.
-//   useEffect(
-//     () => () => {
-//       if (demoTimer.current) clearTimeout(demoTimer.current);
-//     },
-//     [],
-//   );
-
-//   return (
-//     <div className="relative overflow-hidden rounded-3xl p-5 glass-dark sm:p-6">
-//       <div
-//         className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full opacity-40"
-//         style={{ background: "radial-gradient(circle, oklch(0.78 0.15 165) 0%, transparent 70%)" }}
-//       />
-
-//       {/* Hidden native file pickers */}
-//       <input
-//         ref={pdfInputRef}
-//         type="file"
-//         accept="application/pdf,.pdf"
-//         className="hidden"
-//         onChange={onFileSelected}
-//       />
-//       <input
-//         ref={imageInputRef}
-//         type="file"
-//         accept="image/*"
-//         className="hidden"
-//         onChange={onFileSelected}
-//       />
-
-//       {state === "setup" && (
-//         <>
-//           <div className="flex items-center gap-2 text-base font-bold tracking-tight text-white">
-//             <Sparkles className="h-4 w-4 text-[color:var(--mint)]" /> 🤖 AI Ride Matching
-//           </div>
-//           <p className="mt-2 text-[13px] leading-relaxed text-white/75">
-//             Upload your class timetable so CampusRide can recommend rides based on your schedule.
-//           </p>
-
-//           <div className="mt-5 grid grid-cols-2 gap-3">
-//             <button
-//               onClick={() => pdfInputRef.current?.click()}
-//               className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
-//             >
-//               <FileText className="h-4 w-4 text-[color:var(--mint)]" /> Upload PDF
-//             </button>
-//             <button
-//               onClick={() => imageInputRef.current?.click()}
-//               className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
-//             >
-//               <ImageIcon className="h-4 w-4 text-[color:var(--mint)]" /> Upload Image
-//             </button>
-//           </div>
-
-//           <div className="my-5 flex items-center gap-3">
-//             <div className="h-px flex-1 bg-white/25" />
-//             <span className="text-[11px] font-semibold tracking-widest text-white/70">OR</span>
-//             <div className="h-px flex-1 bg-white/25" />
-//           </div>
-
-//           <button
-//             onClick={() => useDemoTimetable()}
-//             className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 text-[15px] font-semibold tracking-tight shadow-[var(--shadow-soft)] transition hover:brightness-105"
-//           >
-//             <Upload className="h-4 w-4" /> ✨ Use Demo Timetable (Recommended)
-//           </button>
-//           <p className="mt-3 text-center text-[11px] text-white/55">
-//             Perfect for exploring CampusRide instantly.
-//           </p>
-//           {error && (
-//             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-destructive">
-//               <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {error}
-//             </p>
-//           )}
-//         </>
-//       )}
-
-//       {state === "processing" && (
-//         <>
-//           <div className="flex items-center gap-2 text-sm font-semibold">
-//             <Loader2 className="h-4 w-4 animate-spin text-[color:var(--mint)]" /> 🤖 AI
-//             Processing...
-//           </div>
-//           {fileName && (
-//             <p className="mt-2 flex items-center gap-1.5 truncate text-[13px] leading-snug text-muted-foreground">
-//               <FileText className="h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" />
-//               <span className="truncate">{fileName}</span>
-//             </p>
-//           )}
-//           <div className="mt-4 space-y-2.5">
-//             {processingSteps.map((step, i) => (
-//               <div
-//                 key={step}
-//                 className={`flex items-center gap-2 text-[13px] transition-opacity duration-300 ${
-//                   i < visibleSteps ? "opacity-100" : "opacity-30"
-//                 }`}
-//               >
-//                 {i < visibleSteps ? (
-//                   <CheckCircle2 className="h-4 w-4 shrink-0 text-[color:var(--mint)]" />
-//                 ) : (
-//                   <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-//                 )}
-//                 <span>{step}</span>
-//               </div>
-//             ))}
-//           </div>
-//         </>
-//       )}
-
-//       {state === "suggested" && (
-//         <>
-//           <div className="flex items-center justify-between gap-2">
-//             <div className="flex items-center gap-2 text-xs font-semibold text-[color:var(--mint)]">
-//               <Sparkles className="h-3.5 w-3.5" /> AI SUGGESTED RIDE
-//             </div>
-//             <button
-//               onClick={() => beginSetup()}
-//               className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-//             >
-//               <RefreshCw className="h-3 w-3" /> Change Timetable
-//             </button>
-//           </div>
-//           <p className="mt-2 text-[15px] leading-snug">
-//             Based on your uploaded timetable, your last class ends at{" "}
-//             <span className="font-semibold">{analysis?.lastClassEndTime ?? "1:15 PM"}</span>. We
-//             found <span className="font-semibold">3 students</span> heading to{" "}
-//             <span className="font-semibold">Chandigarh</span> around the same time.
-//           </p>
-//           <div className="mt-4 flex items-center justify-between">
-//             <div className="flex -space-x-2">
-//               {["#8B5CF6", "#22C55E", "#F59E0B"].map((c, i) => (
-//                 <div
-//                   key={i}
-//                   className="h-8 w-8 rounded-full border-2 border-[oklch(0.22_0.05_250)]"
-//                   style={{ background: c }}
-//                 />
-//               ))}
-//             </div>
-//             <button
-//               onClick={() => go("details")}
-//               className="flex items-center gap-1 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[color:var(--foreground)]"
-//             >
-//               Join ride <ArrowRight className="h-3.5 w-3.5" />
-//             </button>
-//           </div>
-//         </>
-//       )}
-//     </div>
-//   );
-
-//   // Real upload path: send the file to the Gemini-backed server function.
-//   async function analyzeFile(file: File) {
-//     setError(null);
-//     setFileName(file.name);
-//     setState("processing");
-//     try {
-//       const form = new FormData();
-//       form.append("file", file);
-//       const result = await analyzeTimetable({ data: form });
-//       applyAnalysis(result);
-//     } catch (err) {
-//       setState("setup");
-//       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-//     }
-//   }
-
-//   // Demo path: no file, no API call — reuse the same processing flow.
-//   function useDemoTimetable() {
-//     setError(null);
-//     setFileName(null);
-//     setState("processing");
-//     demoTimer.current = window.setTimeout(() => applyAnalysis(DEMO_ANALYSIS), 2000);
-//   }
-
-//   function applyAnalysis(result: TimetableAnalysis) {
-//     setAnalysis(result);
-//     localStorage.setItem("timetableUploaded", "true");
-//     localStorage.setItem("timetableAnalysis", JSON.stringify(result));
-//     setState("suggested");
-//   }
-
-//   function beginSetup() {
-//     setError(null);
-//     setFileName(null);
-//     setState("setup");
-//   }
-// }
-
-// function OfferRideScreen({ back }: { back: () => void }) {
-//   return (
-//     <>
-//       <ScreenHeader title="Offer a Ride" back={back} />
-//       <ScreenBody className="max-w-3xl">
-//         <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0">
-//           {/* Left column */}
-//           <div className="space-y-4">
-//             <div className="glass space-y-4 rounded-3xl p-5">
-//               <Field
-//                 icon={<MapPin className="h-4 w-4 text-[color:var(--primary)]" />}
-//                 label="Pickup"
-//                 value="Chitkara  University, Main Gate"
-//               />
-//               <div className="ml-6 h-3 border-l-2 border-dashed border-white/70" />
-//               <Field
-//                 icon={<Navigation className="h-4 w-4 text-[color:var(--mint)]" />}
-//                 label="Destination"
-//                 value="Chandigarh, Sector 17"
-//               />
-//             </div>
-
-//             <div className="grid grid-cols-2 gap-3">
-//               <div className="glass rounded-2xl p-4">
-//                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-//                   Departure
-//                 </p>
-//                 <p className="mt-1 flex items-center gap-1.5 font-semibold">
-//                   <Calendar className="h-4 w-4" /> Today
-//                 </p>
-//                 <p className="text-sm text-muted-foreground">1:15 PM</p>
-//               </div>
-//               <div className="glass rounded-2xl p-4">
-//                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-//                   Seats
-//                 </p>
-//                 <div className="mt-1 flex items-center gap-2">
-//                   {[1, 2, 3, 4].map((n) => (
-//                     <div
-//                       key={n}
-//                       className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${n <= 3 ? "gradient-brand text-white" : "bg-white/60 text-muted-foreground"}`}
-//                     >
-//                       {n}
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Right column */}
-//           <div className="space-y-4">
-//             <div className="glass rounded-3xl p-5">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-//                     Cost per seat
-//                   </p>
-//                   <p className="text-2xl font-bold text-gradient-brand">₹85</p>
-//                   <p className="text-xs text-muted-foreground">Auto-calculated fuel split</p>
-//                 </div>
-//                 <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-brand">
-//                   <Wallet className="h-6 w-6 text-white" />
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="glass rounded-3xl p-5">
-//               <p className="mb-3 text-sm font-semibold">Ride preferences</p>
-//               <div className="flex flex-wrap gap-2">
-//                 {["Music OK", "AC on", "No smoking", "Girls only", "Quiet ride"].map((p, i) => (
-//                   <span
-//                     key={p}
-//                     className={`rounded-full px-3 py-1.5 text-xs ${i < 3 ? "gradient-brand text-white" : "bg-white/60 text-muted-foreground"}`}
-//                   >
-//                     {p}
-//                   </span>
-//                 ))}
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-//         <button
-//           onClick={() => {
-//             createRide({
-//               from: "Chitkara  University",
-//               to: "Chandigarh, Sector 17",
-//               distanceKm: 62,
-//               seatsTotal: 3,
-//               costPerSeat: 85,
-//               soloFare: 300,
-//             });
-//             back();
-//           }}
-//           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 font-semibold shadow-[var(--shadow-soft)]"
-//         >
-//           Publish ride <ArrowRight className="h-4 w-4" />
-//         </button>
-//       </ScreenBody>
-//     </>
-//   );
-// }
-
-// function Field({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-//   return (
-//     <div className="flex items-center gap-3">
-//       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/70">{icon}</div>
-//       <div className="min-w-0 flex-1">
-//         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-//           {label}
-//         </p>
-//         <p className="truncate font-semibold">{value}</p>
-//       </div>
-//     </div>
-//   );
-// }
-
-// const availableRides = [
-//   {
-//     name: "Rohan K.",
-//     dept: "CSE '25",
-//     from: "Chitkara  Uni",
-//     to: "Chandigarh Sec 17",
-//     time: "1:15 PM",
-//     seats: 3,
-//     cost: 85,
-//     score: 4.9,
-//     color: "#4F46E5",
-//   },
-//   {
-//     name: "Priya M.",
-//     dept: "ECE '26",
-//     from: "Chitkara  Uni",
-//     to: "Elante Mall",
-//     time: "2:00 PM",
-//     seats: 2,
-//     cost: 90,
-//     score: 4.8,
-//     color: "#10B981",
-//   },
-//   {
-//     name: "Arjun S.",
-//     dept: "MBA '25",
-//     from: "Boys Hostel D",
-//     to: "Panchkula",
-//     time: "4:30 PM",
-//     seats: 1,
-//     cost: 120,
-//     score: 4.7,
-//     color: "#F59E0B",
-//   },
-//   {
-//     name: "Neha V.",
-//     dept: "Design '27",
-//     from: "Chitkara  Uni",
-//     to: "Mohali Airport",
-//     time: "6:00 PM",
-//     seats: 3,
-//     cost: 150,
-//     score: 5.0,
-//     color: "#EC4899",
-//   },
-// ];
-
-// function FindRideScreen({ back, onSelect }: { back: () => void; onSelect: () => void }) {
-//   return (
-//     <>
-//       <ScreenHeader title="Find a Ride" back={back} />
-//       <ScreenBody className="max-w-5xl">
-//         <div className="space-y-4">
-//           <div className="glass space-y-3 rounded-3xl p-5">
-//             <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:space-y-0">
-//               <Field
-//                 icon={<MapPin className="h-4 w-4 text-[color:var(--primary)]" />}
-//                 label="From"
-//                 value="Chitkara  University"
-//               />
-//               <Field
-//                 icon={<Navigation className="h-4 w-4 text-[color:var(--mint)]" />}
-//                 label="To"
-//                 value="Chandigarh"
-//               />
-//             </div>
-//             <div className="grid grid-cols-2 gap-3 pt-2 sm:max-w-md">
-//               <div className="rounded-xl bg-white/60 px-3 py-2">
-//                 <p className="text-[10px] font-semibold uppercase text-muted-foreground">When</p>
-//                 <p className="text-sm font-semibold">Today, 1 PM</p>
-//               </div>
-//               <div className="rounded-xl bg-white/60 px-3 py-2">
-//                 <p className="text-[10px] font-semibold uppercase text-muted-foreground">
-//                   Seats needed
-//                 </p>
-//                 <p className="text-sm font-semibold">1</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="flex items-center justify-between px-1">
-//             <p className="text-sm font-semibold">{availableRides.length} matches nearby</p>
-//             <span className="flex items-center gap-1 text-xs font-semibold text-[color:var(--primary)]">
-//               <Sparkles className="h-3 w-3" /> AI ranked
-//             </span>
-//           </div>
-
-//           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-//             {availableRides.map((r, i) => (
-//               <button key={i} onClick={onSelect} className="glass rounded-3xl p-4 text-left">
-//                 <div className="flex items-center gap-3">
-//                   <div
-//                     className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-semibold text-white"
-//                     style={{ background: r.color }}
-//                   >
-//                     {r.name
-//                       .split(" ")
-//                       .map((n) => n[0])
-//                       .join("")}
-//                   </div>
-//                   <div className="min-w-0 flex-1">
-//                     <div className="flex items-center gap-1.5">
-//                       <p className="truncate font-semibold">{r.name}</p>
-//                       <BadgeCheck className="h-4 w-4 shrink-0 text-[color:var(--primary)]" />
-//                     </div>
-//                     <p className="text-xs text-muted-foreground">{r.dept}</p>
-//                   </div>
-//                   <div className="shrink-0 text-right">
-//                     <p className="text-lg font-bold text-gradient-brand">₹{r.cost}</p>
-//                     <p className="text-[10px] text-muted-foreground">per seat</p>
-//                   </div>
-//                 </div>
-//                 <div className="mt-3 flex items-center justify-between border-t border-white/60 pt-3 text-xs">
-//                   <span className="flex items-center gap-1 text-muted-foreground">
-//                     <Clock className="h-3 w-3" /> {r.time}
-//                   </span>
-//                   <span className="flex items-center gap-1 text-muted-foreground">
-//                     <Users className="h-3 w-3" /> {r.seats} seats
-//                   </span>
-//                   <span className="flex items-center gap-1 font-semibold">
-//                     <Star className="h-3 w-3 fill-[color:var(--mint)] text-[color:var(--mint)]" />{" "}
-//                     {r.score}
-//                   </span>
-//                 </div>
-//               </button>
-//             ))}
-//           </div>
-//         </div>
-//       </ScreenBody>
-//     </>
-//   );
-// }
-
-// function RideDetailsScreen({ back, onStart }: { back: () => void; onStart: () => void }) {
-//   return (
-//     <>
-//       <ScreenHeader title="Ride Details" back={back} />
-//       <ScreenBody className="max-w-4xl">
-//         <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0">
-//           {/* Left column: driver + route */}
-//           <div className="space-y-4">
-//             <div className="glass rounded-3xl p-5">
-//               <div className="flex items-center gap-4">
-//                 <div
-//                   className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl text-xl font-bold text-white"
-//                   style={{ background: "#4F46E5" }}
-//                 >
-//                   RK
-//                 </div>
-//                 <div className="min-w-0 flex-1">
-//                   <div className="flex items-center gap-1.5">
-//                     <p className="text-lg font-semibold">Rohan Kapoor</p>
-//                     <BadgeCheck className="h-5 w-5 text-[color:var(--primary)]" />
-//                   </div>
-//                   <p className="text-xs text-muted-foreground">CSE '25 · Chitkara  University</p>
-//                   <div className="mt-1 flex items-center gap-3 text-xs">
-//                     <span className="flex items-center gap-1 font-semibold">
-//                       <Star className="h-3.5 w-3.5 fill-[color:var(--mint)] text-[color:var(--mint)]" />{" "}
-//                       4.9
-//                     </span>
-//                     <span className="text-muted-foreground">142 rides</span>
-//                   </div>
-//                 </div>
-//               </div>
-//               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-//                 <TrustPill label="Trust Score" value="98" />
-//                 <TrustPill label="On-time" value="96%" />
-//                 <TrustPill label="Verified" value="✓" />
-//               </div>
-//             </div>
-
-//             <div className="glass rounded-3xl p-5">
-//               <div className="flex">
-//                 <div className="mr-4 flex flex-col items-center pt-1">
-//                   <div className="h-3 w-3 rounded-full bg-[color:var(--primary)]" />
-//                   <div className="my-1 min-h-[40px] w-0.5 flex-1 bg-gradient-to-b from-[color:var(--primary)] to-[color:var(--mint)]" />
-//                   <div className="h-3 w-3 rounded-full bg-[color:var(--mint)]" />
-//                 </div>
-//                 <div className="flex-1 space-y-4">
-//                   <div>
-//                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">
-//                       1:15 PM · Pickup
-//                     </p>
-//                     <p className="font-semibold">Chitkara  University, Main Gate</p>
-//                   </div>
-//                   <div>
-//                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">
-//                       1:55 PM · Drop-off
-//                     </p>
-//                     <p className="font-semibold">Chandigarh, Sector 17</p>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Right column: car, seats, cost */}
-//           <div className="space-y-4">
-//             <div className="grid grid-cols-2 gap-3">
-//               <div className="glass rounded-2xl p-4">
-//                 <Car className="mb-2 h-5 w-5 text-[color:var(--primary)]" />
-//                 <p className="text-sm font-semibold">Hyundai i20</p>
-//                 <p className="text-xs text-muted-foreground">White · PB-11-AK-2205</p>
-//               </div>
-//               <div className="glass rounded-2xl p-4">
-//                 <Users className="mb-2 h-5 w-5 text-[color:var(--mint)]" />
-//                 <p className="text-sm font-semibold">3 seats left</p>
-//                 <p className="text-xs text-muted-foreground">1 rider joined</p>
-//               </div>
-//             </div>
-
-//             <div className="glass rounded-3xl p-5">
-//               <p className="mb-3 text-sm font-semibold">Cost split</p>
-//               <div className="space-y-2 text-sm">
-//                 <Row label="Estimated fuel" value="₹340" />
-//                 <Row label="Toll" value="₹60" />
-//                 <Row label="Split across 4" value="÷ 4" />
-//                 <div className="flex items-center justify-between border-t border-white/60 pt-2">
-//                   <span className="font-semibold">Your share</span>
-//                   <span className="text-xl font-bold text-gradient-brand">₹85</span>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-//         <button
-//           onClick={() => {
-//             joinRide();
-//             onStart();
-//           }}
-//           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 font-semibold shadow-[var(--shadow-soft)]"
-//         >
-//           Confirm & join ride <ArrowRight className="h-4 w-4" />
-//         </button>
-//       </ScreenBody>
-//     </>
-//   );
-// }
-
-// function TrustPill({ label, value }: { label: string; value: string }) {
-//   return (
-//     <div className="rounded-xl bg-white/60 py-2">
-//       <p className="text-base font-bold text-gradient-brand">{value}</p>
-//       <p className="text-[10px] text-muted-foreground">{label}</p>
-//     </div>
-//   );
-// }
-
-// function Row({ label, value }: { label: string; value: string }) {
-//   return (
-//     <div className="flex items-center justify-between text-muted-foreground">
-//       <span>{label}</span>
-//       <span className="font-semibold text-foreground">{value}</span>
-//     </div>
-//   );
-// }
-
-// function LiveTripScreen({ back }: { back: () => void }) {
-//   // Leaving the live trip means the ride finished — mark it completed so the
-//   // "Your impact" dashboard reflects the new ride on return to Home.
-//   const finish = () => {
-//     completeRide();
-//     back();
-//   };
-//   return (
-//     <div className="relative h-[100dvh] w-full overflow-hidden">
-//       {/* Faux map — fills the whole viewport at every screen size. */}
-//       <div
-//         className="absolute inset-0"
-//         style={{
-//           background: "linear-gradient(135deg, oklch(0.9 0.05 200) 0%, oklch(0.88 0.07 165) 100%)",
-//         }}
-//       >
-//         <svg
-//           className="absolute inset-0 h-full w-full opacity-70"
-//           viewBox="0 0 400 800"
-//           preserveAspectRatio="none"
-//         >
-//           <defs>
-//             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-//               <path
-//                 d="M 40 0 L 0 0 0 40"
-//                 fill="none"
-//                 stroke="white"
-//                 strokeWidth="0.5"
-//                 opacity="0.6"
-//               />
-//             </pattern>
-//           </defs>
-//           <rect width="100%" height="100%" fill="url(#grid)" />
-//           <path
-//             d="M 40 700 Q 120 500 180 420 T 340 120"
-//             stroke="oklch(0.55 0.18 240)"
-//             strokeWidth="5"
-//             fill="none"
-//             strokeLinecap="round"
-//             strokeDasharray="0"
-//           />
-//           <path
-//             d="M 40 700 Q 120 500 180 420"
-//             stroke="oklch(0.78 0.15 165)"
-//             strokeWidth="5"
-//             fill="none"
-//             strokeLinecap="round"
-//           />
-//           <circle cx="40" cy="700" r="10" fill="oklch(0.55 0.18 240)" />
-//           <circle cx="340" cy="120" r="10" fill="oklch(0.78 0.15 165)" />
-//           <circle
-//             cx="180"
-//             cy="420"
-//             r="14"
-//             fill="white"
-//             stroke="oklch(0.55 0.18 240)"
-//             strokeWidth="4"
-//           />
-//         </svg>
-//       </div>
-
-//       {/* Top bar */}
-//       <div className="relative z-10 px-4 pt-12 sm:px-6 lg:pt-8">
-//         <div className="glass mx-auto flex max-w-2xl items-center gap-3 rounded-2xl px-4 py-3">
-//           <button
-//             onClick={finish}
-//             className="grid h-8 w-8 place-items-center rounded-full bg-white/70"
-//           >
-//             <ArrowLeft className="h-4 w-4" />
-//           </button>
-//           <div className="min-w-0 flex-1">
-//             <p className="text-[11px] font-semibold uppercase text-muted-foreground">
-//               Trip in progress
-//             </p>
-//             <p className="truncate font-semibold">To Chandigarh Sec 17</p>
-//           </div>
-//           <div className="text-right">
-//             <p className="text-[11px] text-muted-foreground">ETA</p>
-//             <p className="font-bold text-gradient-brand">14 min</p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* SOS floating */}
-//       <button
-//         className="absolute right-4 top-40 z-10 grid h-14 w-14 place-items-center rounded-full font-bold text-white shadow-lg sm:right-6 lg:top-28"
-//         style={{ background: "linear-gradient(135deg, oklch(0.65 0.24 25), oklch(0.55 0.24 15))" }}
-//       >
-//         <AlertTriangle className="h-6 w-6" />
-//       </button>
-
-//       {/* Bottom sheet */}
-//       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6">
-//         <div className="glass mx-auto max-w-xl rounded-3xl p-5">
-//           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/30 lg:hidden" />
-//           <div className="flex items-center gap-3">
-//             <div
-//               className="grid h-12 w-12 place-items-center rounded-2xl font-semibold text-white"
-//               style={{ background: "#4F46E5" }}
-//             >
-//               RK
-//             </div>
-//             <div className="min-w-0 flex-1">
-//               <div className="flex items-center gap-1.5">
-//                 <p className="font-semibold">Rohan K.</p>
-//                 <BadgeCheck className="h-4 w-4 text-[color:var(--primary)]" />
-//               </div>
-//               <p className="text-xs text-muted-foreground">Hyundai i20 · PB-11-AK-2205</p>
-//             </div>
-//             <button className="grid h-10 w-10 place-items-center rounded-full gradient-brand">
-//               <Phone className="h-4 w-4 text-white" />
-//             </button>
-//           </div>
-
-//           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-//             <Stat label="Distance" value="8.4 km" />
-//             <Stat label="Speed" value="42 km/h" />
-//             <Stat label="Arrive" value="1:55 PM" />
-//           </div>
-
-//           <button
-//             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-semibold text-white"
-//             style={{
-//               background: "linear-gradient(135deg, oklch(0.6 0.24 25), oklch(0.5 0.24 15))",
-//             }}
-//           >
-//             <AlertTriangle className="h-4 w-4" /> Emergency SOS
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// function Stat({ label, value }: { label: string; value: string }) {
-//   return (
-//     <div className="rounded-xl bg-white/60 py-2">
-//       <p className="text-sm font-bold">{value}</p>
-//       <p className="text-[10px] text-muted-foreground">{label}</p>
-//     </div>
-//   );
-// }
-
-// function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => void }) {
-//   const { totalRides } = useImpactStats();
-//   return (
-//     <>
-//       <ScreenHeader title="Profile" back={back} />
-//       <ScreenBody className="max-w-5xl">
-//         <div className="space-y-4 md:grid md:grid-cols-3 md:items-start md:gap-5 md:space-y-0 lg:gap-6">
-//           {/* Identity card */}
-//           <div className="glass relative overflow-hidden rounded-3xl p-6 text-center md:col-span-1">
-//             <div
-//               className="absolute inset-0 -z-10 opacity-60"
-//               style={{
-//                 background:
-//                   "radial-gradient(60% 80% at 50% 0%, oklch(0.85 0.12 200) 0%, transparent 70%)",
-//               }}
-//             />
-//             <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl gradient-brand text-2xl font-bold text-white">
-//               AS
-//             </div>
-//             <div className="mt-3 flex items-center justify-center gap-1.5">
-//               <p className="text-lg font-semibold">Aditi Sharma</p>
-//               <BadgeCheck className="h-5 w-5 text-[color:var(--primary)]" />
-//             </div>
-//             <p className="text-xs text-muted-foreground">CSE '26 · Chitkara  University</p>
-//             <div className="mt-4 flex items-center justify-center gap-2 text-xs">
-//               <span className="glass flex items-center gap-1 rounded-full px-3 py-1">
-//                 <GraduationCap className="h-3 w-3" /> Verified student
-//               </span>
-//             </div>
-//           </div>
-
-//           {/* Stats + menu + sign out */}
-//           <div className="space-y-4 md:col-span-2">
-//             <div className="grid grid-cols-3 gap-3">
-//               <StatCard label="Trust Score" value="96" />
-//               <StatCard label="Rides" value={String(totalRides)} />
-//               <StatCard label="Rating" value="4.9" />
-//             </div>
-
-//             <div className="glass overflow-hidden rounded-3xl">
-//               {[
-//                 { icon: Car, label: "My rides", meta: `${totalRides} completed` },
-//                 { icon: Wallet, label: "Payments", meta: "UPI · **** 2280" },
-//                 { icon: Shield, label: "Verification", meta: "ID + Email" },
-//                 { icon: Settings, label: "Preferences", meta: "AC, music, ..." },
-//               ].map(({ icon: Icon, label, meta }, i, arr) => (
-//                 <div
-//                   key={label}
-//                   className={`flex items-center gap-3 px-4 py-4 ${i < arr.length - 1 ? "border-b border-white/60" : ""}`}
-//                 >
-//                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/70">
-//                     <Icon className="h-4 w-4 text-[color:var(--primary)]" />
-//                   </div>
-//                   <div className="min-w-0 flex-1">
-//                     <p className="text-sm font-semibold">{label}</p>
-//                     <p className="truncate text-xs text-muted-foreground">{meta}</p>
-//                   </div>
-//                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-//                 </div>
-//               ))}
-//             </div>
-
-//             <button
-//               onClick={onLogout}
-//               className="glass flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-semibold text-destructive"
-//             >
-//               <LogOut className="h-4 w-4" /> Sign out
-//             </button>
-//           </div>
-//         </div>
-//       </ScreenBody>
-//     </>
-//   );
-// }
-
-// function StatCard({ label, value }: { label: string; value: string }) {
-//   return (
-//     <div className="glass rounded-2xl p-4 text-center">
-//       <p className="text-2xl font-bold text-gradient-brand">{value}</p>
-//       <p className="text-[11px] text-muted-foreground">{label}</p>
-//     </div>
-//   );
-// }
-
-
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -1357,12 +50,14 @@ import {
   type Ride,
   type Vehicle,
   type LatLng,
+  type User as UserType,
 } from "../lib/rides";
 import { getRoadDistanceKm } from "../lib/routing";
 import { LocationAutocomplete } from "../components/location-autocomplete";
 import { analyzeTimetable, type TimetableAnalysis } from "../lib/timetable";
 import { ImpactSection } from "../components/ImpactSection";
 import { sendSos } from "../lib/sos";
+import { sendOtp, verifyOtp } from "../lib/otp";
 import { LiveMap } from "../components/live-map";
 
 export const Route = createFileRoute("/")({
@@ -1383,8 +78,6 @@ const ALL_PREFERENCES = ["Music OK", "AC on", "No smoking", "Girls only", "Quiet
 /** How close (km) a ride's geocoded endpoint must be to a searched location to match. */
 const MATCH_RADIUS_KM = 25;
 
-/** Shape returned by LocationAutocomplete's onSelect — kept local so this file
- *  type-checks even if the component's exported prop types are loose/untyped. */
 type LocationResult = { name: string; lat: number; lng: number };
 
 function CampusRideApp() {
@@ -1406,8 +99,7 @@ function CampusRideApp() {
     );
   }
 
-  // The live trip is an immersive, full-screen map. It intentionally drops the
-  // sidebar / bottom nav so the map can own the whole viewport at every size.
+  // The live trip is an immersive, full-screen map.
   if (screen === "live") {
     return (
       <>
@@ -1422,7 +114,7 @@ function CampusRideApp() {
       {/* Desktop / laptop persistent sidebar */}
       <SideNav current={screen} go={setScreen} />
 
-      {/* Main content column — mobile scrolls the page, bottom nav sticks. */}
+      {/* Main content column */}
       <div className="relative flex min-h-[100dvh] min-w-0 flex-1 flex-col">
         <main className="min-w-0 flex-1 overflow-x-hidden">
           {screen === "home" && <HomeScreen go={setScreen} openDetails={openDetails} />}
@@ -1461,7 +153,6 @@ function BrandMark({ className }: { className?: string }) {
   );
 }
 
-/** Desktop / laptop navigation rail (lg+). Hidden on mobile & tablet. */
 function SideNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
   const { user } = useCampusRide();
   const name = user?.name ?? "Aditi Sharma";
@@ -1498,12 +189,22 @@ function SideNav({ current, go }: { current: Screen; go: (s: Screen) => void }) 
             onClick={() => go("profile")}
             className="flex w-full items-center gap-3 rounded-2xl bg-white/55 p-3 text-left transition hover:bg-white/80"
           >
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full gradient-brand text-sm font-semibold text-white">
-              {initials}
-            </div>
+            {user?.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt={name}
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full gradient-brand text-sm font-semibold text-white">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{name}</p>
-              <p className="truncate text-xs text-muted-foreground">{dept} · Verified</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {dept} · {user?.isVerified ? "Verified" : "Unverified"}
+              </p>
             </div>
           </button>
         </div>
@@ -1512,7 +213,6 @@ function SideNav({ current, go }: { current: Screen; go: (s: Screen) => void }) 
   );
 }
 
-/** Mobile & tablet bottom navigation. Hidden once the sidebar takes over (lg+). */
 function BottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 pt-2 lg:hidden">
@@ -1568,7 +268,6 @@ function ScreenHeader({
   );
 }
 
-/** Standard centered content column shared by the inner screens. */
 function ScreenBody({
   children,
   className = "max-w-2xl",
@@ -1583,30 +282,151 @@ function ScreenBody({
   );
 }
 
-/* ---------- Screens ---------- */
+/* ---------- Login Screen ---------- */
 
 function LoginScreen({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("aditi.sharma@chitkara.edu");
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const emailValid = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
-  const handleSendCode = () => {
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const handleSendCode = async () => {
+    setErrorMsg(null);
     if (!emailValid(email)) {
-      toast.error("Please enter a valid university email.");
+      const msg = "Please enter a valid university email address.";
+      toast.error(msg);
+      setErrorMsg(msg);
       return;
     }
-    setStep("otp");
+
+    setLoading(true);
+    const toastId = toast.loading("Sending OTP to your inbox...");
+    try {
+      const res = await sendOtp({ data: { email: email.trim() } });
+      if (res.success) {
+        toast.success(res.message, { id: toastId });
+        setStep("otp");
+        setOtpDigits(["", "", "", "", "", ""]);
+        setResendTimer(30);
+        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      } else {
+        toast.error(res.message, { id: toastId });
+        setErrorMsg(res.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send verification code. Please try again.";
+      toast.error(msg, { id: toastId });
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerify = () => {
-    rideStore.login(email.trim());
-    onDone();
+  const handleResendCode = async () => {
+    if (resendTimer > 0 || loading) return;
+    setErrorMsg(null);
+    setLoading(true);
+    const toastId = toast.loading("Sending new verification code...");
+    try {
+      const res = await sendOtp({ data: { email: email.trim() } });
+      if (res.success) {
+        toast.success("OTP sent successfully to your inbox.", { id: toastId });
+        setResendTimer(30);
+      } else {
+        toast.error(res.message, { id: toastId });
+        setErrorMsg(res.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to resend code.";
+      toast.error(msg, { id: toastId });
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, val: string) => {
+    const num = val.replace(/\D/g, "");
+    if (!num) {
+      const next = [...otpDigits];
+      next[index] = "";
+      setOtpDigits(next);
+      return;
+    }
+    const next = [...otpDigits];
+    next[index] = num[num.length - 1];
+    setOtpDigits(next);
+
+    if (index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const next = [...otpDigits];
+    for (let i = 0; i < 6; i++) {
+      next[i] = pasted[i] || "";
+    }
+    setOtpDigits(next);
+    const focusIdx = Math.min(pasted.length, 5);
+    inputRefs.current[focusIdx]?.focus();
+  };
+
+  const handleVerify = async () => {
+    const code = otpDigits.join("");
+    if (code.length < 6) {
+      const msg = "Please enter the complete 6-digit verification code.";
+      toast.error(msg);
+      setErrorMsg(msg);
+      return;
+    }
+
+    setErrorMsg(null);
+    setLoading(true);
+    const toastId = toast.loading("Verifying code...");
+    try {
+      const res = await verifyOtp({ data: { email: email.trim(), otp: code } });
+      if (res.success) {
+        toast.success("Email verified! Welcome to CampusRide AI.", { id: toastId });
+        rideStore.login(email.trim());
+        onDone();
+      } else {
+        toast.error(res.message, { id: toastId });
+        setErrorMsg(res.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Verification failed. Please check the code and try again.";
+      toast.error(msg, { id: toastId });
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-[100dvh] w-full overflow-x-hidden lg:grid lg:grid-cols-2">
-      {/* Hero / brand panel */}
       <div className="relative flex flex-col overflow-hidden px-6 pt-14 pb-6 sm:px-10 lg:justify-center lg:px-14 lg:pt-16 lg:pb-16 xl:px-20">
         <div
           className="absolute inset-0 -z-10 opacity-70"
@@ -1623,7 +443,6 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
           <p className="mt-3 text-muted-foreground lg:mt-5 lg:text-lg">
             AI-matched carpools for verified university students. Safer, cheaper, greener.
           </p>
-          {/* Trust badges live in the hero on large screens. */}
           <div className="mt-8 hidden items-center gap-6 text-sm text-muted-foreground lg:flex">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="h-4 w-4 text-[color:var(--mint)]" /> Verified
@@ -1638,7 +457,6 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
-      {/* Form panel */}
       <div className="flex items-center justify-center px-6 pb-10 sm:px-10 lg:px-14 lg:pb-0">
         <div className="w-full max-w-md">
           <div className="glass space-y-4 rounded-3xl p-5 sm:p-6">
@@ -1653,51 +471,113 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
+                    placeholder="student@university.edu"
+                    disabled={loading}
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                    onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
                   />
                 </div>
+
+                {errorMsg && (
+                  <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
                 <button
                   onClick={handleSendCode}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)]"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)] disabled:opacity-60"
                 >
-                  Send verification code <ArrowRight className="h-4 w-4" />
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <>
+                      Send verification code <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
                 <p className="flex items-center justify-center gap-1 text-center text-[11px] text-muted-foreground">
-                  <Shield className="h-3 w-3" /> Only verified .edu accounts allowed
+                  <Shield className="h-3 w-3" /> Real OTP verification sent to your inbox
                 </p>
               </>
             ) : (
               <>
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Enter 6-digit code
-                </label>
-                <div className="flex gap-2">
-                  {["4", "1", "2", "8", "•", "•"].map((c, i) => (
-                    <div
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Enter 6-digit code
+                  </label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Sent to <span className="font-semibold text-foreground">{email}</span>
+                  </p>
+                </div>
+
+                <div className="flex gap-2" onPaste={handlePaste}>
+                  {otpDigits.map((digit, i) => (
+                    <input
                       key={i}
-                      className="grid h-12 min-w-0 flex-1 place-items-center rounded-xl border border-white/60 bg-white/70 text-lg font-semibold"
-                    >
-                      {c}
-                    </div>
+                      ref={(el) => { inputRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(i, e)}
+                      disabled={loading}
+                      className="grid h-12 min-w-0 flex-1 place-items-center text-center rounded-xl border border-white/60 bg-white/70 text-lg font-semibold outline-none focus:border-[color:var(--primary)]"
+                    />
                   ))}
                 </div>
+
+                {errorMsg && (
+                  <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
                 <button
                   onClick={handleVerify}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)]"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold shadow-[var(--shadow-soft)] disabled:opacity-60"
                 >
-                  Verify & continue <ArrowRight className="h-4 w-4" />
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <>
+                      Verify & continue <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
-                <button
-                  onClick={() => setStep("email")}
-                  className="w-full text-xs text-muted-foreground"
-                >
-                  Change email
-                </button>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <button
+                    onClick={() => {
+                      setStep("email");
+                      setErrorMsg(null);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Change email
+                  </button>
+
+                  {resendTimer > 0 ? (
+                    <span className="text-muted-foreground">Resend code in {resendTimer}s</span>
+                  ) : (
+                    <button
+                      onClick={handleResendCode}
+                      disabled={loading}
+                      className="font-semibold text-[color:var(--primary)] hover:underline"
+                    >
+                      Resend code
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>
 
-          {/* Trust badges below the card on mobile / tablet. */}
           <div className="mt-6 flex items-center justify-center gap-6 text-xs text-muted-foreground lg:hidden">
             <span className="flex items-center gap-1.5">
               <BadgeCheck className="h-3.5 w-3.5 text-[color:var(--mint)]" /> Verified
@@ -1715,7 +595,8 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** Rides the current user has created or joined, soonest first. */
+/* ---------- Home Screen ---------- */
+
 function useMyRides(): Ride[] {
   const { user, rides } = useCampusRide();
   return useMemo(() => {
@@ -1741,7 +622,6 @@ function HomeScreen({
 
   return (
     <div className="pb-28 lg:pb-12">
-      {/* Greeting header with ambient gradient */}
       <div className="relative px-4 pt-12 pb-6 sm:px-6 lg:px-8">
         <div
           className="absolute inset-0 -z-10"
@@ -1763,18 +643,24 @@ function HomeScreen({
             </button>
             <button
               onClick={() => go("profile")}
-              className="grid h-10 w-10 place-items-center rounded-full gradient-brand text-sm font-semibold text-white lg:hidden"
+              className="grid h-10 w-10 place-items-center rounded-full gradient-brand text-sm font-semibold text-white lg:hidden overflow-hidden"
             >
-              {initials}
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={firstName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </button>
           </div>
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Dashboard: single column on mobile, two-column from tablet up. */}
         <div className="space-y-4 md:grid md:grid-cols-12 md:items-start md:gap-5 md:space-y-0 lg:gap-6">
-          {/* Primary column */}
           <div className="space-y-4 md:col-span-7 md:space-y-5 lg:space-y-6">
             <AIRideCard go={go} />
 
@@ -1805,7 +691,6 @@ function HomeScreen({
             </div>
           </div>
 
-          {/* Secondary column */}
           <div className="space-y-4 md:col-span-5 md:space-y-5 lg:space-y-6">
             <div>
               <div className="mb-3 flex items-center justify-between">
@@ -1862,6 +747,8 @@ function HomeScreen({
   );
 }
 
+/* ---------- AI Ride Card Component ---------- */
+
 const processingSteps = [
   "Analyzing timetable...",
   "Detecting class timings...",
@@ -1871,8 +758,6 @@ const processingSteps = [
 
 type AICardState = "setup" | "processing" | "suggested";
 
-// Canned schedule used by the "Use Demo Timetable" shortcut so users can
-// explore instantly without an upload or an API key.
 const DEMO_ANALYSIS: TimetableAnalysis = {
   classTimings: [
     { day: "Monday", subject: "Data Structures", startTime: "9:00 AM", endTime: "10:00 AM" },
@@ -1911,11 +796,10 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
 
   const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
     if (file) void analyzeFile(file);
   };
 
-  // Reveal the processing checklist while the analysis runs.
   useEffect(() => {
     if (state !== "processing") return;
     setVisibleSteps(0);
@@ -1925,7 +809,6 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
     return () => timers.forEach(clearTimeout);
   }, [state]);
 
-  // Cancel a pending demo simulation if the card unmounts.
   useEffect(
     () => () => {
       if (demoTimer.current) clearTimeout(demoTimer.current);
@@ -1940,7 +823,6 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
         style={{ background: "radial-gradient(circle, oklch(0.78 0.15 165) 0%, transparent 70%)" }}
       />
 
-      {/* Hidden native file pickers */}
       <input
         ref={pdfInputRef}
         type="file"
@@ -2076,7 +958,6 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
     </div>
   );
 
-  // Real upload path: send the file to the Gemini-backed server function.
   async function analyzeFile(file: File) {
     setError(null);
     setFileName(file.name);
@@ -2092,7 +973,6 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
     }
   }
 
-  // Demo path: no file, no API call — reuse the same processing flow.
   function loadDemoTimetable() {
     setError(null);
     setFileName(null);
@@ -2113,6 +993,8 @@ function AIRideCard({ go }: { go: (s: Screen) => void }) {
     setState("setup");
   }
 }
+
+/* ---------- Vehicle Form Modal ---------- */
 
 function VehicleFormModal({
   isOpen,
@@ -2300,6 +1182,8 @@ function VehicleFormModal({
   );
 }
 
+/* ---------- Offer Ride Screen ---------- */
+
 function OfferRideScreen({ back }: { back: () => void }) {
   const { user } = useCampusRide();
   const vehicles = user?.vehicles ?? [];
@@ -2323,7 +1207,6 @@ function OfferRideScreen({ back }: { back: () => void }) {
   const togglePref = (p: string) =>
     setPrefs((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
-  // Auto-adjust max seats based on selected car capacity
   const maxAvailableSeats = selectedVehicle ? selectedVehicle.totalSeats : 4;
   const seatButtons = Array.from({ length: maxAvailableSeats }, (_, i) => i + 1);
 
@@ -2334,7 +1217,6 @@ function OfferRideScreen({ back }: { back: () => void }) {
     }
   }, [selectedVehicle]);
 
-  // Recalculate road distance & split fare automatically when pickup or destination coordinates change
   useEffect(() => {
     if (!fromCoords || !toCoords) return;
     let cancelled = false;
@@ -2345,7 +1227,7 @@ function OfferRideScreen({ back }: { back: () => void }) {
         if (cancelled) return;
         setCalculatedDistance(dist);
         const total = calculateTotalFare(dist);
-        const split = calculateSplitFare(total, seats + 1); // driver + passenger seats
+        const split = calculateSplitFare(total, seats + 1);
         setCost(String(split));
       })
       .catch(() => {
@@ -2365,7 +1247,6 @@ function OfferRideScreen({ back }: { back: () => void }) {
     };
   }, [fromCoords, toCoords]);
 
-  // Recalculate split fare whenever passenger seats change
   const handleSeatsChange = (newSeats: number) => {
     setSeats(newSeats);
     const dist = calculatedDistance ?? (fromCoords && toCoords ? distanceKm(fromCoords, toCoords) : 30);
@@ -2414,9 +1295,7 @@ function OfferRideScreen({ back }: { back: () => void }) {
       <ScreenHeader title="Offer a Ride" back={back} />
       <ScreenBody className="max-w-3xl">
         <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0">
-          {/* Left column */}
           <div className="space-y-4">
-
             <div className="glass space-y-4 rounded-3xl p-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/70">
@@ -2511,7 +1390,6 @@ function OfferRideScreen({ back }: { back: () => void }) {
             </div>
           </div>
 
-          {/* Right column */}
           <div className="space-y-4">
             <div className="glass rounded-3xl p-5">
               <div className="flex items-center justify-between">
@@ -2602,12 +1480,11 @@ function OfferRideScreen({ back }: { back: () => void }) {
         </button>
       </ScreenBody>
 
-      {/* Vehicle Selector Bottom Sheet */}
+      {/* Vehicle Selector Sheet */}
       {showVehicleSelector && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowVehicleSelector(false)} />
           <div className="glass relative rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto">
-            {/* Handle */}
             <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-muted-foreground/30" />
 
             <div className="flex items-center justify-between">
@@ -2668,7 +1545,6 @@ function OfferRideScreen({ back }: { back: () => void }) {
         </div>
       )}
 
-      {/* Add New Vehicle Form Modal */}
       <VehicleFormModal
         isOpen={showAddVehicleModal}
         onClose={() => setShowAddVehicleModal(false)}
@@ -2681,7 +1557,8 @@ function OfferRideScreen({ back }: { back: () => void }) {
   );
 }
 
-/** Loose, case-insensitive location match: matches when either string contains the other. */
+/* ---------- Find Ride Screen ---------- */
+
 function locationMatches(value: string, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -2707,11 +1584,6 @@ function FindRideScreen({ back, onSelect }: { back: () => void; onSelect: (id: s
     seats: number;
   } | null>(null);
 
-  // Matching active rides created through Offer a Ride, filtered by the applied
-  // search. Before the first search, every ride with seats available is shown.
-  // An endpoint matches when the geocoded coordinates are within MATCH_RADIUS_KM
-  // (precise, used when both sides were picked from autocomplete) or, failing
-  // that, when the names loosely match — so typed text and seed rides still work.
   const matches = useMemo(() => {
     const active = rides.filter((r) => r.availableSeats > 0);
     if (!applied) return active;
@@ -2722,7 +1594,7 @@ function FindRideScreen({ back, onSelect }: { back: () => void; onSelect: (id: s
       query: string,
       queryCoords: LatLng | null,
     ) => {
-      if (!query.trim() && !queryCoords) return true; // field not used as a filter
+      if (!query.trim() && !queryCoords) return true;
       if (queryCoords && rideCoords && distanceKm(queryCoords, rideCoords) <= MATCH_RADIUS_KM)
         return true;
       return locationMatches(rideName, query);
@@ -2902,6 +1774,8 @@ function FindRideScreen({ back, onSelect }: { back: () => void; onSelect: (id: s
   );
 }
 
+/* ---------- Ride Details Screen & Reminder ---------- */
+
 const REMINDER_STORAGE_KEY = "campus-ride:reminders";
 const REMINDER_OPTIONS = [5, 10, 15, 30] as const;
 
@@ -2928,7 +1802,7 @@ function saveReminder(rideId: string, minutes: number | null) {
     }
     window.localStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(all));
   } catch {
-    /* storage unavailable — keep selection in memory */
+    /* fallback memory */
   }
 }
 
@@ -3043,7 +1917,6 @@ function RideDetailsScreen({
       <ScreenHeader title="Ride Details" back={back} />
       <ScreenBody className="max-w-4xl">
         <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0">
-          {/* Left column: driver + route */}
           <div className="space-y-4">
             <div className="glass rounded-3xl p-5">
               <div className="flex items-center gap-4">
@@ -3059,7 +1932,7 @@ function RideDetailsScreen({
                     <BadgeCheck className="h-5 w-5 text-[color:var(--primary)]" />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {ride.driver.dept} · Chitkara  University
+                    {ride.driver.dept} · Chitkara University
                   </p>
                   <div className="mt-1 flex items-center gap-3 text-xs">
                     <span className="flex items-center gap-1 font-semibold">
@@ -3102,7 +1975,6 @@ function RideDetailsScreen({
             </div>
           </div>
 
-          {/* Right column: car, seats, cost */}
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="glass rounded-2xl p-4">
@@ -3175,6 +2047,8 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+/* ---------- Live Trip Screen ---------- */
+
 function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | null }) {
   const { rides } = useCampusRide();
   const ride = rides.find((r) => r.id === rideId);
@@ -3185,7 +2059,6 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
   const driverInitials = ride?.driver.initials ?? "RK";
   const driverColor = ride?.driver.color ?? "#4F46E5";
 
-  // Live trip / driver data used by the Call and SOS actions.
   const liveRide = {
     rideId: rideId ?? "ride_rk_chd_0115",
     userId: "aditi_sharma",
@@ -3245,10 +2118,8 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden">
-      {/* Interactive map — fills the whole viewport at every screen size. */}
       <LiveMap className="absolute inset-0" />
 
-      {/* Top bar */}
       <div className="relative z-10 px-4 pt-12 sm:px-6 lg:pt-8">
         <div className="glass mx-auto flex max-w-2xl items-center gap-3 rounded-2xl px-4 py-3">
           <button
@@ -3270,7 +2141,6 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
         </div>
       </div>
 
-      {/* SOS floating */}
       <button
         onClick={() => setConfirmOpen(true)}
         className="absolute right-4 top-40 z-10 grid h-14 w-14 place-items-center rounded-full font-bold text-white shadow-lg sm:right-6 lg:top-28"
@@ -3279,7 +2149,6 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
         <AlertTriangle className="h-6 w-6" />
       </button>
 
-      {/* Bottom sheet */}
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6">
         <div className="glass mx-auto max-w-xl rounded-3xl p-5">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/30 lg:hidden" />
@@ -3331,7 +2200,6 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
         </div>
       </div>
 
-      {/* Success / error toast */}
       {toastMessage && (
         <div className="glass absolute left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 shadow-lg">
           {toastMessage.ok ? (
@@ -3343,7 +2211,6 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
         </div>
       )}
 
-      {/* Emergency SOS confirmation modal */}
       {confirmOpen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center p-6">
           <div
@@ -3402,17 +2269,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/* ---------- Profile Screen & Subviews ---------- */
+
 function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => void }) {
   const { user, rides } = useCampusRide();
   const [activeSection, setActiveSection] = useState<"main" | "myRides" | "vehicles" | "payments" | "verification" | "preferences">("main");
   const [myRidesFilter, setMyRidesFilter] = useState<"Upcoming" | "Offered" | "Booked" | "Completed" | "Cancelled">("Upcoming");
 
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
-
-  // State for Payments section
   const [upiInput, setUpiInput] = useState(user?.upiId ?? "aditi@okicici");
-
-  // State for Verification section
   const [studentDocName, setStudentDocName] = useState(user?.studentIdDoc ?? "");
 
   const name = user?.name ?? "Aditi Sharma";
@@ -3424,7 +2289,35 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
   const isVerified = user?.isVerified ?? true;
   const userPreferences = user?.preferences ?? ["Music OK", "AC on", "No smoking"];
 
-  // Filter rides belonging to the current user
+  // Modals state
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [modalStep, setModalStep] = useState<"email" | "otp">("email");
+  const [modalOtp, setModalOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [modalTimer, setModalTimer] = useState(0);
+  const modalInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editUniversity, setEditUniversity] = useState("");
+  const [editCourse, setEditCourse] = useState("");
+  const [editGraduationYear, setEditGraduationYear] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editProfileImage, setEditProfileImage] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+
+  useEffect(() => {
+    if (modalTimer <= 0) return;
+    const interval = setInterval(() => {
+      setModalTimer((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [modalTimer]);
+
   const userRides = useMemo(() => {
     if (!user) return [];
     return rides.filter((r) => r.driver.id === user.id || (r.passengers ?? []).includes(user.id));
@@ -3472,6 +2365,167 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
     }
   };
 
+  const openEmailModal = () => {
+    setNewEmail("");
+    setModalStep("email");
+    setModalOtp(["", "", "", "", "", ""]);
+    setModalError(null);
+    setModalTimer(0);
+    setIsChangingEmail(true);
+  };
+
+  const handleSendNewEmailOtpDirect = async (targetEmail: string) => {
+    setModalLoading(true);
+    setModalError(null);
+    const toastId = toast.loading("Sending OTP to your inbox...");
+    try {
+      const res = await sendOtp({ data: { email: targetEmail } });
+      if (res.success) {
+        toast.success(res.message, { id: toastId });
+        setModalStep("otp");
+        setModalOtp(["", "", "", "", "", ""]);
+        setModalTimer(30);
+        setTimeout(() => modalInputRefs.current[0]?.focus(), 100);
+      } else {
+        toast.error(res.message, { id: toastId });
+        setModalError(res.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send code.";
+      toast.error(msg, { id: toastId });
+      setModalError(msg);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleSendNewEmailOtp = async () => {
+    setModalError(null);
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setModalError("Please enter a valid university email address.");
+      return;
+    }
+    if (trimmed === user?.email.toLowerCase()) {
+      setModalError("New email must be different from your current email.");
+      return;
+    }
+    await handleSendNewEmailOtpDirect(trimmed);
+  };
+
+  const handleVerifyNewEmail = async () => {
+    const code = modalOtp.join("");
+    if (code.length < 6) {
+      setModalError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    setModalError(null);
+    setModalLoading(true);
+    const toastId = toast.loading("Verifying code...");
+    try {
+      const res = await verifyOtp({ data: { email: newEmail.trim(), otp: code } });
+      if (res.success) {
+        toast.success("Email updated and verified successfully!", { id: toastId });
+        rideStore.updateUserEmail(newEmail.trim());
+        setIsChangingEmail(false);
+      } else {
+        toast.error(res.message, { id: toastId });
+        setModalError(res.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Verification failed.";
+      toast.error(msg, { id: toastId });
+      setModalError(msg);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditName(name);
+    setEditUniversity(university);
+    setEditCourse(user?.course ?? "Computer Science & Engineering");
+    setEditGraduationYear(user?.graduationYear ?? "2026");
+    setEditPhone(user?.phone ?? "");
+    setEditProfileImage(user?.profileImage ?? "");
+    setEditEmail(user?.email ?? "");
+    setEditError(null);
+    setIsEditingProfile(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size must be under 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setEditError(null);
+    if (!editName.trim()) {
+      setEditError("Name is required.");
+      return;
+    }
+    if (!editUniversity.trim()) {
+      setEditError("University is required.");
+      return;
+    }
+    if (!editCourse.trim()) {
+      setEditError("Course/Branch is required.");
+      return;
+    }
+    if (!editGraduationYear.trim() || !/^\d{4}$/.test(editGraduationYear.trim())) {
+      setEditError("Please enter a valid 4-digit graduation year.");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const isEmailChanged = editEmail.trim().toLowerCase() !== user?.email.toLowerCase();
+
+      const updates: Partial<UserType> = {
+        name: editName.trim(),
+        university: editUniversity.trim(),
+        course: editCourse.trim(),
+        graduationYear: editGraduationYear.trim(),
+        phone: editPhone.trim(),
+        profileImage: editProfileImage,
+      };
+
+      if (isEmailChanged) {
+        updates.email = editEmail.trim().toLowerCase();
+        updates.isVerified = false;
+        updates.verifiedAt = null;
+        rideStore.updateUserProfile(updates);
+        toast.success("Profile saved! Please verify your new email.");
+        setIsEditingProfile(false);
+        setNewEmail(editEmail.trim().toLowerCase());
+        setModalStep("email");
+        setIsChangingEmail(true);
+        setTimeout(() => {
+          handleSendNewEmailOtpDirect(editEmail.trim().toLowerCase());
+        }, 300);
+      } else {
+        rideStore.updateUserProfile(updates);
+        toast.success("Profile updated successfully!");
+        setIsEditingProfile(false);
+      }
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : "Failed to save profile updates.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <>
       <ScreenHeader
@@ -3493,7 +2547,6 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
       <ScreenBody className="max-w-5xl">
         {activeSection === "main" && (
           <div className="space-y-4 md:grid md:grid-cols-3 md:items-start md:gap-5 md:space-y-0 lg:gap-6">
-            {/* Identity card */}
             <div className="glass relative overflow-hidden rounded-3xl p-6 text-center md:col-span-1">
               <div
                 className="absolute inset-0 -z-10 opacity-60"
@@ -3502,9 +2555,17 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
                     "radial-gradient(60% 80% at 50% 0%, oklch(0.85 0.12 200) 0%, transparent 70%)",
                 }}
               />
-              <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl gradient-brand text-2xl font-bold text-white">
-                {initials}
-              </div>
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={name}
+                  className="mx-auto h-20 w-20 rounded-3xl object-cover shadow-[var(--shadow-soft)] border-2 border-white/40"
+                />
+              ) : (
+                <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl gradient-brand text-2xl font-bold text-white">
+                  {initials}
+                </div>
+              )}
               <div className="mt-3 flex items-center justify-center gap-1.5">
                 <p className="text-lg font-semibold">{name}</p>
                 {isVerified && <BadgeCheck className="h-5 w-5 text-[color:var(--primary)]" />}
@@ -3518,12 +2579,58 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
               </div>
             </div>
 
-            {/* Stats + menu + sign out */}
             <div className="space-y-4 md:col-span-2">
               <div className="grid grid-cols-3 gap-3">
                 <StatCard label="Trust Score" value={String(trustScore)} />
                 <StatCard label="Rides" value={String(userRides.length)} />
                 <StatCard label="Rating" value={String(rating)} />
+              </div>
+
+              <div className="glass overflow-hidden rounded-3xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Account Information
+                  </h3>
+                  <button
+                    onClick={openEditModal}
+                    className="rounded-xl bg-white/70 px-3 py-1.5 text-xs font-semibold text-[color:var(--primary)] transition hover:bg-white"
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Full Name</p>
+                    <p className="text-sm font-semibold">{name}</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-white/40" />
+
+                <div className="flex items-center justify-between py-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">University Email</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-sm font-semibold truncate">{user?.email}</p>
+                      {isVerified ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
+                          <CheckCircle2 className="h-3 w-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 animate-pulse">
+                          Unverified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={openEmailModal}
+                    className="ml-3 shrink-0 rounded-xl bg-white/70 px-3 py-1.5 text-xs font-semibold text-[color:var(--primary)] transition hover:bg-white"
+                  >
+                    Change Email
+                  </button>
+                </div>
               </div>
 
               <div className="glass overflow-hidden rounded-3xl">
@@ -3586,7 +2693,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
 
-        {/* Section: My Vehicles */}
+        {/* Section: Vehicles */}
         {activeSection === "vehicles" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -3658,7 +2765,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
 
-        {/* Section 1: My Rides */}
+        {/* Section: My Rides */}
         {activeSection === "myRides" && (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -3734,7 +2841,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
 
-        {/* Section 2: Payments */}
+        {/* Section: Payments */}
         {activeSection === "payments" && (
           <div className="space-y-4">
             <div className="glass rounded-3xl p-5 space-y-4">
@@ -3794,7 +2901,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
 
-        {/* Section 3: Verification */}
+        {/* Section: Verification */}
         {activeSection === "verification" && (
           <div className="space-y-4">
             <div className="glass rounded-3xl p-5 space-y-4">
@@ -3838,7 +2945,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
 
-        {/* Section 4: Preferences */}
+        {/* Section: Preferences */}
         {activeSection === "preferences" && (
           <div className="glass rounded-3xl p-5 space-y-4">
             <div>
@@ -3877,6 +2984,351 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
           </div>
         )}
       </ScreenBody>
+
+      {/* Change Email Modal */}
+      {isChangingEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !modalLoading && setIsChangingEmail(false)}
+          />
+          <div className="glass relative w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <button
+              onClick={() => setIsChangingEmail(false)}
+              disabled={modalLoading}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/70 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl gradient-brand text-white">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Change University Email</h3>
+                <p className="text-xs text-muted-foreground">OTP verification required for new email</p>
+              </div>
+            </div>
+
+            {modalStep === "email" ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    New University Email
+                  </label>
+                  <div className="mt-1 flex items-center gap-3 rounded-2xl border border-white/60 bg-white/70 px-4 py-3">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="new.student@university.edu"
+                      disabled={modalLoading}
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                      onKeyDown={(e) => e.key === "Enter" && handleSendNewEmailOtp()}
+                    />
+                  </div>
+                </div>
+
+                {modalError && (
+                  <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{modalError}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSendNewEmailOtp}
+                  disabled={modalLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold text-white shadow-md disabled:opacity-60"
+                >
+                  {modalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <>
+                      Send verification code <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    We've sent a 6-digit verification code to <span className="font-semibold text-foreground">{newEmail}</span>.
+                  </p>
+                  <label className="mt-3 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Enter 6-Digit Code
+                  </label>
+                  <div className="mt-2 flex gap-2">
+                    {modalOtp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => { modalInputRefs.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const next = [...modalOtp];
+                          next[idx] = val.slice(-1);
+                          setModalOtp(next);
+                          if (val && idx < 5) modalInputRefs.current[idx + 1]?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !digit && idx > 0) {
+                            modalInputRefs.current[idx - 1]?.focus();
+                          }
+                        }}
+                        disabled={modalLoading}
+                        className="grid h-12 min-w-0 flex-1 place-items-center text-center rounded-xl border border-white/60 bg-white/70 text-lg font-semibold outline-none focus:border-[color:var(--primary)]"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {modalError && (
+                  <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{modalError}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleVerifyNewEmail}
+                  disabled={modalLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold text-white shadow-md disabled:opacity-60"
+                >
+                  {modalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <>
+                      Verify & Update Email <CheckCircle2 className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <button
+                    onClick={() => {
+                      setModalStep("email");
+                      setModalError(null);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Change email
+                  </button>
+                  {modalTimer > 0 ? (
+                    <span className="text-muted-foreground">Resend code in {modalTimer}s</span>
+                  ) : (
+                    <button
+                      onClick={handleSendNewEmailOtp}
+                      disabled={modalLoading}
+                      className="font-semibold text-[color:var(--primary)] hover:underline"
+                    >
+                      Resend code
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/45 backdrop-blur-sm animate-fade-in"
+            onClick={() => !editLoading && setIsEditingProfile(false)}
+          />
+          <div className="glass relative w-full max-w-md rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] z-10 animate-scale-in">
+            <button
+              onClick={() => setIsEditingProfile(false)}
+              disabled={editLoading}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/70 text-muted-foreground hover:text-foreground transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl gradient-brand text-white shadow-sm">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Edit Profile</h3>
+                <p className="text-xs text-muted-foreground">Update your personal information</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative group cursor-pointer">
+                  {editProfileImage ? (
+                    <img
+                      src={editProfileImage}
+                      alt="Preview"
+                      className="h-20 w-20 rounded-3xl object-cover border-2 border-white/60 shadow-md transition-all duration-300 group-hover:brightness-75"
+                    />
+                  ) : (
+                    <div className="grid h-20 w-20 place-items-center rounded-3xl gradient-brand text-2xl font-bold text-white border-2 border-white/60 transition-all duration-300 group-hover:brightness-75">
+                      {initials}
+                    </div>
+                  )}
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-[10px] font-semibold rounded-3xl opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                    Change Picture
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {editProfileImage && (
+                  <button
+                    onClick={() => setEditProfileImage("")}
+                    className="text-[10px] font-semibold text-destructive hover:underline transition"
+                  >
+                    Remove Picture
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g. Aditi Sharma"
+                  className="mt-1 w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--primary)] transition"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    University Email
+                  </label>
+                  {isVerified && (
+                    <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                      <CheckCircle2 className="h-3 w-3" /> Verified (Read-only)
+                    </span>
+                  )}
+                </div>
+                <div className="relative mt-1">
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="student@university.edu"
+                    disabled={isVerified}
+                    className={`w-full rounded-2xl border border-white/60 px-4 py-2.5 text-sm outline-none transition ${
+                      isVerified
+                        ? "bg-white/40 text-muted-foreground cursor-not-allowed"
+                        : "bg-white/70 focus:border-[color:var(--primary)]"
+                    }`}
+                  />
+                  {isVerified && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingProfile(false);
+                        openEmailModal();
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[color:var(--primary)] hover:underline"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  University
+                </label>
+                <input
+                  type="text"
+                  value={editUniversity}
+                  onChange={(e) => setEditUniversity(e.target.value)}
+                  placeholder="e.g. Chitkara University"
+                  className="mt-1 w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--primary)] transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Course / Branch
+                  </label>
+                  <input
+                    type="text"
+                    value={editCourse}
+                    onChange={(e) => setEditCourse(e.target.value)}
+                    placeholder="e.g. CSE"
+                    className="mt-1 w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--primary)] transition"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Graduation Year
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={editGraduationYear}
+                    onChange={(e) => setEditGraduationYear(e.target.value.replace(/\D/g, ""))}
+                    placeholder="e.g. 2026"
+                    className="mt-1 w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--primary)] transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="e.g. +91 98765 43210"
+                  className="mt-1 w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--primary)] transition"
+                />
+              </div>
+
+              {editError && (
+                <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleSaveProfile}
+                disabled={editLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 font-semibold text-white shadow-md disabled:opacity-60 transition"
+              >
+                {editLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <>
+                    Save Profile Changes <CheckCircle2 className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <VehicleFormModal
         isOpen={showAddVehicleModal}
