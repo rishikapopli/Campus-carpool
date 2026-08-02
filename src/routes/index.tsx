@@ -118,7 +118,15 @@ function CampusRideApp() {
       <div className="relative flex min-h-[100dvh] min-w-0 flex-1 flex-col">
         <main className="min-w-0 flex-1 overflow-x-hidden">
           {screen === "home" && <HomeScreen go={setScreen} openDetails={openDetails} />}
-          {screen === "offer" && <OfferRideScreen back={() => setScreen("home")} />}
+          {screen === "offer" && (
+            <OfferRideScreen
+              back={() => setScreen("home")}
+              openLiveTrip={(rideId) => {
+                setSelectedRideId(rideId);
+                setScreen("live");
+              }}
+            />
+          )}
           {screen === "find" && (
             <FindRideScreen back={() => setScreen("home")} onSelect={openDetails} />
           )}
@@ -1184,7 +1192,13 @@ function VehicleFormModal({
 
 /* ---------- Offer Ride Screen ---------- */
 
-function OfferRideScreen({ back }: { back: () => void }) {
+function OfferRideScreen({
+  back,
+  openLiveTrip,
+}: {
+  back: () => void;
+  openLiveTrip: (rideId: string) => void;
+}) {
   const { user } = useCampusRide();
   const vehicles = user?.vehicles ?? [];
   const selectedVehicle = vehicles.find((v) => v.id === user?.selectedVehicleId) ?? vehicles[0] ?? null;
@@ -1196,10 +1210,11 @@ function OfferRideScreen({ back }: { back: () => void }) {
   const [date, setDate] = useState(MIN_DATE());
   const [time, setTime] = useState("13:15");
   const [seats, setSeats] = useState(selectedVehicle ? Math.max(1, selectedVehicle.totalSeats - 1) : 3);
-  const [cost, setCost] = useState("85");
+  const [cost, setCost] = useState("0");
   const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [prefs, setPrefs] = useState<string[]>(["Music OK", "AC on", "No smoking"]);
+  const [publishedRideId, setPublishedRideId] = useState<string | null>(null);
 
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
@@ -1284,7 +1299,7 @@ function OfferRideScreen({ back }: { back: () => void }) {
     }
     const ride = rideStore.addRide(input);
     toast.success(`Ride published — ${ride.from} → ${ride.to}`);
-    back();
+    setPublishedRideId(ride.id);
   };
 
   const currentDist = calculatedDistance ?? (fromCoords && toCoords ? Math.round(distanceKm(fromCoords, toCoords)) : null);
@@ -1479,6 +1494,36 @@ function OfferRideScreen({ back }: { back: () => void }) {
           Publish ride <ArrowRight className="h-4 w-4" />
         </button>
       </ScreenBody>
+
+      {/* Published Ride Dialog */}
+      {publishedRideId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="glass w-[340px] rounded-3xl p-6 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-3xl font-bold text-white shadow-md">
+              ✓
+            </div>
+            <h2 className="text-xl font-bold">Ride Published!</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your ride is now visible to other students.
+            </p>
+            <button
+              onClick={() => openLiveTrip(publishedRideId)}
+              className="mt-6 w-full rounded-2xl gradient-brand py-3 font-semibold text-white shadow-md"
+            >
+              View Live Ride
+            </button>
+            <button
+              onClick={() => {
+                setPublishedRideId(null);
+                back();
+              }}
+              className="mt-3 w-full rounded-2xl border border-white/60 py-3 font-semibold"
+            >
+              Back Home
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Vehicle Selector Sheet */}
       {showVehicleSelector && (
@@ -2052,17 +2097,35 @@ function Row({ label, value }: { label: string; value: string }) {
 function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | null }) {
   const { rides } = useCampusRide();
   const ride = rides.find((r) => r.id === rideId);
-  const destination = ride?.to ?? "Chandigarh Sec 17";
-  const driverName = ride
-    ? `${ride.driver.name.split(" ")[0]} ${ride.driver.name.split(" ")[1]?.[0] ?? ""}.`
-    : "Rohan K.";
-  const driverInitials = ride?.driver.initials ?? "RK";
-  const driverColor = ride?.driver.color ?? "#4F46E5";
+
+  if (!ride) {
+    return (
+      <div className="flex h-screen items-center justify-center flex-col gap-4">
+        <p className="text-sm text-slate-600">Ride not found.</p>
+        <button onClick={back} className="rounded-2xl gradient-brand px-4 py-2 text-white font-semibold text-sm">
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  const destination = ride.to;
+  const destinationCoords = ride.toCoords;
+
+  const driverName = `${ride.driver.name.split(" ")[0]} ${
+    ride.driver.name.split(" ")[1]?.[0] ?? ""
+  }.`;
+
+  const driverInitials = ride.driver.initials;
+  const driverColor = ride.driver.color;
 
   const liveRide = {
-    rideId: rideId ?? "ride_rk_chd_0115",
+    rideId: ride.id,
     userId: "aditi_sharma",
-    driver: { name: driverName, phone: "+919876543210" },
+    driver: {
+      name: driverName,
+      phone: "+919876543210",
+    },
   };
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -2118,7 +2181,18 @@ function LiveTripScreen({ back, rideId }: { back: () => void; rideId: string | n
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden">
-      <LiveMap className="absolute inset-0" />
+      {destinationCoords ? (
+        <LiveMap
+          className="absolute inset-0"
+          destination={[destinationCoords.lng, destinationCoords.lat]}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+          <p className="text-sm text-slate-600">
+            Destination coordinates unavailable.
+          </p>
+        </div>
+      )}
 
       <div className="relative z-10 px-4 pt-12 sm:px-6 lg:pt-8">
         <div className="glass mx-auto flex max-w-2xl items-center gap-3 rounded-2xl px-4 py-3">
@@ -2277,7 +2351,7 @@ function ProfileScreen({ back, onLogout }: { back: () => void; onLogout: () => v
   const [myRidesFilter, setMyRidesFilter] = useState<"Upcoming" | "Offered" | "Booked" | "Completed" | "Cancelled">("Upcoming");
 
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
-  const [upiInput, setUpiInput] = useState(user?.upiId ?? "aditi@okicici");
+  const [upiInput, setUpiInput] = useState(user?.upiId ?? "yourname@upi_id");
   const [studentDocName, setStudentDocName] = useState(user?.studentIdDoc ?? "");
 
   const name = user?.name ?? "Aditi Sharma";
