@@ -76,7 +76,7 @@ const NAV_ITEMS: { id: Screen; icon: typeof Home; label: string }[] = [
   { id: "home", icon: Home, label: "Home" },
   { id: "find", icon: Search, label: "Find" },
   { id: "offer", icon: PlusCircle, label: "Offer" },
-  { id: "events", icon: Calendar, label: "🎉 Events" },
+  { id: "events", icon: Calendar, label: " Events" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
@@ -835,7 +835,7 @@ function HomeScreen({
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-semibold flex items-center gap-1.5">
-                  <span>🔥 Upcoming Events</span>
+                  <span>Upcoming Events</span>
                 </h3>
                 <button
                   onClick={() => go("events")}
@@ -1536,12 +1536,12 @@ function OfferRideScreen({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="glass rounded-2xl p-4">
+              <div className="glass rounded-2xl p-5 min-h-[110px]">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Departure
                 </p>
-                <p className="mt-1 flex items-center gap-1.5 font-semibold">
-                  <Calendar className="h-4 w-4" />
+                <p className="mt-3 flex items-center gap-1.5 font-semibold">
+                  <Calendar className="h-5 w-5" />
                   <input
                     type="date"
                     value={date}
@@ -4044,7 +4044,7 @@ const CAMPUS_EVENTS: CampusEvent[] = [
     name: "Hackathon 2026",
     date: "25 March 2026",
     time: "9:00 AM onwards (36 hrs)",
-    venue: "Thapar Auditorium & CSE Labs",
+    venue: "Chitkara Auditorium & CSE Labs",
     attendees: "800+",
     status: "Live",
     description: "An intense 36-hour hackathon where students collaborate in teams to build innovative solutions for real-world problems. Supported by industry leaders.",
@@ -4093,7 +4093,7 @@ const CAMPUS_EVENTS: CampusEvent[] = [
     status: "Upcoming",
     description: "National conference on Emerging Technologies featuring keynotes from industry veterans, academic paper presentations, and panels on AI and Cloud Computing.",
     organizer: {
-      name: "IEEE Thapar Section",
+      name: "IEEE Chitkara Section",
       logo: "IE",
       color: "oklch(0.72 0.14 190)",
     },
@@ -4130,7 +4130,7 @@ function EventsListScreen({
               }}
             />
             <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-[color:var(--primary)]/10 text-[color:var(--primary)] mb-2">
-              🎉 Official Transportation Partner
+               Official Transportation Partner
             </span>
             <h3 className="font-display text-xl font-bold tracking-tight text-foreground">
               Simplify College Event Travel
@@ -4458,11 +4458,11 @@ function EventDetailsScreen({
                 <div className="space-y-3.5 text-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-xs">Estimated Travelling</span>
-                    <span className="font-bold text-foreground text-base">👥 {totalTravelling} student(s)</span>
+                    <span className="font-bold text-foreground text-base"> {totalTravelling} student(s)</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-xs">Ride Pools Available</span>
-                    <span className="font-bold text-foreground text-base">🚗 {totalPools} pools</span>
+                    <span className="font-bold text-foreground text-base"> {totalPools} pools</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-xs">Average Ride Cost</span>
@@ -4470,7 +4470,7 @@ function EventDetailsScreen({
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-xs">Total Seats Available</span>
-                    <span className="font-bold text-[color:var(--mint)] text-base">💺 {totalSeats} seats</span>
+                    <span className="font-bold text-[color:var(--mint)] text-base"> {totalSeats} seats</span>
                   </div>
                   <div className="flex justify-between items-center border-t border-dashed border-white/60 pt-3">
                     <span className="text-muted-foreground text-xs">Estimated Savings</span>
@@ -4675,7 +4675,7 @@ function PartnerScreen({ back }: { back: () => void }) {
                       type="text"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
-                      placeholder="e.g. Thapar University, CSE Dept"
+                      placeholder="e.g. Chitkara University, CSE Dept"
                       className="min-w-0 flex-1 bg-transparent text-sm outline-none text-foreground"
                     />
                   </div>
@@ -4747,7 +4747,7 @@ function PartnerScreen({ back }: { back: () => void }) {
                       type="text"
                       value={eventName}
                       onChange={(e) => setEventName(e.target.value)}
-                      placeholder="e.g. HackThapar 2026"
+                      placeholder="e.g. Hackathon 2026"
                       className="min-w-0 flex-1 bg-transparent text-sm outline-none text-foreground"
                     />
                   </div>
